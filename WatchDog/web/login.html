@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Watchdog Login</title>
+    <link rel="stylesheet" href="/static/panel.css">
+</head>
+<body>
+    <main class="auth-shell">
+        <section class="auth-panel">
+            <h1>Watchdog</h1>
+            <p class="auth-copy">Authenticate through Minecraft to open the wrapper console.</p>
+
+            <form id="login-form" class="auth-form">
+                <label for="player-input">Minecraft player</label>
+                <div class="stack">
+                    <input id="player-input" autocomplete="username" placeholder="PlayerName">
+                    <button type="submit">Send Code</button>
+                </div>
+            </form>
+
+            <form id="code-form" class="auth-form hidden">
+                <label for="code-input">In-game code</label>
+                <div class="stack">
+                    <input id="code-input" inputmode="numeric" autocomplete="one-time-code" placeholder="000000">
+                    <button type="submit">Enter</button>
+                </div>
+            </form>
+
+            <pre id="auth-result" class="result" aria-live="polite"></pre>
+        </section>
+    </main>
+
+    <script src="/static/login.js"></script>
+</body>
+</html>

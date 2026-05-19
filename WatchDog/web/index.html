@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Watchdog Console</title>
+    <link rel="stylesheet" href="/static/panel.css">
+</head>
+<body>
+    <main class="shell">
+        <header class="topbar">
+            <div>
+                <h1>Watchdog</h1>
+                <p id="subtitle">ATM11 wrapper console</p>
+            </div>
+            <div class="status-strip" aria-label="System status">
+                <span id="server-pill" class="pill">Server</span>
+                <span id="bridge-pill" class="pill">Bridge</span>
+                <span id="plugin-count" class="pill">Plugins</span>
+            </div>
+        </header>
+
+        <section class="grid metrics" aria-label="Metrics">
+            <article>
+                <span>Wrapper</span>
+                <strong id="wrapper-state">...</strong>
+            </article>
+            <article>
+                <span>Server</span>
+                <strong id="server-state">...</strong>
+            </article>
+            <article>
+                <span>AetherReach</span>
+                <strong id="bridge-state">...</strong>
+            </article>
+            <article>
+                <span>Players</span>
+                <strong id="players-state">...</strong>
+            </article>
+        </section>
+
+        <section class="workspace">
+            <aside class="side-panel">
+                <div class="panel-section">
+                    <h2>Command</h2>
+                    <form id="command-form" class="stack">
+                        <input id="command-input" autocomplete="off" placeholder="wrapper status">
+                        <button type="submit">Run</button>
+                    </form>
+                    <pre id="command-result" class="result" aria-live="polite"></pre>
+                </div>
+
+                <div class="panel-section">
+                    <h2>Bridge</h2>
+                    <form id="veil-form" class="stack">
+                        <input id="veil-input" autocomplete="off" placeholder="Veil message">
+                        <button type="submit">Send Veil</button>
+                    </form>
+                    <form id="broadcast-form" class="stack">
+                        <input id="broadcast-input" autocomplete="off" placeholder="AetherReach broadcast">
+                        <button type="submit">Broadcast</button>
+                    </form>
+                </div>
+
+                <div class="panel-section">
+                    <h2>Plugins</h2>
+                    <form id="plugin-form" class="stack">
+                        <input id="plugin-input" autocomplete="off" placeholder="plugin_name">
+                        <button type="submit">Reload</button>
+                    </form>
+                    <div id="plugins-list" class="chips"></div>
+                </div>
+            </aside>
+
+            <section class="main-panel">
+                <div class="terminal-toolbar">
+                    <div class="tabs" role="tablist" aria-label="Terminal source">
+                        <button id="tab-wrapper" class="tab active" type="button" data-source="wrapper">Wrapper</button>
+                        <button id="tab-minecraft" class="tab" type="button" data-source="minecraft">Minecraft</button>
+                        <button id="refresh-terminal" class="icon-button" type="button" title="Refresh terminal">R</button>
+                    </div>
+                    <label class="toggle">
+                        <input id="terminal-autoscroll" type="checkbox" checked>
+                        <span>Auto scroll</span>
+                    </label>
+                </div>
+                <pre id="terminal" class="terminal" aria-live="polite"></pre>
+            </section>
+        </section>
+
+        <section class="commands-panel">
+            <div class="section-head">
+                <h2>Registered Commands</h2>
+                <button id="refresh-commands" class="icon-button" type="button" title="Refresh commands">R</button>
+            </div>
+            <div id="commands-list" class="commands-list"></div>
+        </section>
+    </main>
+
+    <script src="/static/panel.js"></script>
+</body>
+</html>

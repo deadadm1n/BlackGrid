@@ -1,0 +1,25 @@
+patches:
+  - file: "server.properties"
+    type: "properties"
+    set:
+      level-seed: "CHANGE_ME"
+      motd: "Aether Reach ATM11"
+      difficulty: "hard"
+      enable-rcon: "true"
+      rcon.port: "25575"
+      rcon.password: "CHANGE_ME"
+
+  - file: "eula.txt"
+    type: "properties"
+    set:
+      eula: "true"
+
+  - file: "user_jvm_args.txt"
+    type: "replace_text_file"
+    content: |
+      -Xms8G
+      -Xmx16G
+
+  - file: "config/ftbranks/ranks.snbt"
+    type: "replace_file"
+    source: "files/ftbranks/ranks.snbt"

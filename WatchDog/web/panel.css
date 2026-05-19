@@ -1,0 +1,362 @@
+:root {
+    color-scheme: dark;
+    --bg: #090b0f;
+    --panel: #11151b;
+    --panel-2: #151b22;
+    --line: #27313c;
+    --text: #e7edf3;
+    --muted: #8f9dab;
+    --green: #39d98a;
+    --cyan: #4cc9f0;
+    --amber: #f2b84b;
+    --red: #ff6b6b;
+    --input: #0b0f14;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    letter-spacing: 0;
+}
+
+.shell {
+    width: min(1440px, 100%);
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.auth-shell {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+}
+
+.auth-panel {
+    width: min(460px, 100%);
+    border: 1px solid var(--line);
+    background: var(--panel);
+    border-radius: 8px;
+    padding: 22px;
+}
+
+.auth-copy {
+    margin-top: 8px;
+    color: var(--muted);
+    line-height: 1.45;
+}
+
+.auth-form {
+    margin-top: 18px;
+}
+
+.auth-form label {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.hidden {
+    display: none;
+}
+
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 14px 0 20px;
+}
+
+h1,
+h2,
+p {
+    margin: 0;
+}
+
+h1 {
+    font-size: 28px;
+    font-weight: 750;
+}
+
+h2 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+#subtitle {
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.status-strip,
+.chips,
+.tabs,
+.section-head,
+.terminal-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.pill,
+.chip {
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--muted);
+    padding: 7px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    line-height: 1;
+}
+
+.pill.good {
+    color: var(--green);
+    border-color: rgba(57, 217, 138, 0.45);
+}
+
+.pill.warn {
+    color: var(--amber);
+    border-color: rgba(242, 184, 75, 0.45);
+}
+
+.pill.bad {
+    color: var(--red);
+    border-color: rgba(255, 107, 107, 0.45);
+}
+
+.grid {
+    display: grid;
+    gap: 12px;
+}
+
+.metrics {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-bottom: 14px;
+}
+
+.metrics article,
+.side-panel,
+.main-panel,
+.commands-panel {
+    border: 1px solid var(--line);
+    background: var(--panel);
+    border-radius: 8px;
+}
+
+.metrics article {
+    min-height: 76px;
+    padding: 14px;
+}
+
+.metrics span {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+    margin-bottom: 10px;
+}
+
+.metrics strong {
+    display: block;
+    font-size: 22px;
+    font-weight: 760;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.workspace {
+    display: grid;
+    grid-template-columns: 360px minmax(0, 1fr);
+    gap: 14px;
+    align-items: stretch;
+}
+
+.side-panel {
+    padding: 14px;
+}
+
+.panel-section + .panel-section {
+    border-top: 1px solid var(--line);
+    margin-top: 16px;
+    padding-top: 16px;
+}
+
+.stack {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+input {
+    width: 100%;
+    min-width: 0;
+    height: 38px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--input);
+    color: var(--text);
+    padding: 0 10px;
+    font: inherit;
+}
+
+input:focus {
+    outline: 2px solid rgba(76, 201, 240, 0.35);
+    outline-offset: 1px;
+}
+
+button {
+    height: 38px;
+    border: 1px solid #365365;
+    border-radius: 6px;
+    background: #183245;
+    color: var(--text);
+    padding: 0 12px;
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+button:hover {
+    border-color: var(--cyan);
+}
+
+.icon-button {
+    width: 38px;
+    padding: 0;
+    font-weight: 800;
+}
+
+.result {
+    min-height: 74px;
+    max-height: 180px;
+    margin: 10px 0 0;
+    border: 1px solid var(--line);
+    background: var(--input);
+    border-radius: 6px;
+    color: var(--muted);
+    padding: 10px;
+    overflow: auto;
+    font-size: 12px;
+}
+
+.main-panel {
+    min-width: 0;
+    height: clamp(520px, 62vh, 760px);
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+}
+
+.terminal-toolbar {
+    padding: 10px;
+    border-bottom: 1px solid var(--line);
+    justify-content: space-between;
+}
+
+.tab {
+    background: transparent;
+    color: var(--muted);
+    border-color: var(--line);
+}
+
+.tab.active {
+    color: var(--text);
+    border-color: rgba(76, 201, 240, 0.55);
+    background: #102231;
+}
+
+.terminal {
+    margin: 0;
+    padding: 14px;
+    background: #05080b;
+    color: #c9d7e3;
+    overflow: auto;
+    white-space: pre-wrap;
+    font: 12px/1.5 "Cascadia Mono", "Consolas", monospace;
+    min-height: 0;
+}
+
+.toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 38px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 650;
+    user-select: none;
+}
+
+.toggle input {
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    accent-color: var(--cyan);
+}
+
+.commands-panel {
+    margin-top: 14px;
+    padding: 14px;
+}
+
+.section-head {
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.commands-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.command-row {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--panel-2);
+    padding: 10px;
+    min-height: 82px;
+}
+
+.command-row strong {
+    display: block;
+    font-size: 13px;
+    margin-bottom: 6px;
+    color: var(--cyan);
+}
+
+.command-row span {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.35;
+}
+
+@media (max-width: 980px) {
+    .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .metrics,
+    .workspace,
+    .commands-list {
+        grid-template-columns: 1fr;
+    }
+
+    .main-panel {
+        height: 520px;
+    }
+}

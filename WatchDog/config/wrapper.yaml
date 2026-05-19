@@ -1,0 +1,146 @@
+wrapper:
+  name: "Watchdog"
+  debug: true
+
+paths:
+  logs_dir: "logs"
+  state_dir: "state"
+  backups_dir: "backups"
+  downloads_dir: "downloads"
+  tmp_dir: "tmp"
+
+server:
+  directory: "atm11"
+  start_script: "auto"
+  java_executable: "${ATM11_JAVA:-auto}"
+  required_java_major: 25
+
+  stop_command: "stop"
+  startup_timeout_seconds: 1800
+  shutdown_timeout_seconds: 180
+
+  show_minecraft_console: false
+  save_minecraft_console_log: true
+
+  environment:
+    ATM11_RESTART: "false"
+
+  startup_success_patterns:
+    - 'For help, type "help"'
+
+  startup_failure_patterns:
+    - "Failed to start the minecraft server"
+    - "Crash report saved"
+    - "This crash report has been saved"
+    - "A fatal error has been detected"
+    - "FatalStartupException"
+    - "session.lock: already locked"
+
+bridges:
+  aetherreach:
+    enabled: true
+    url: "http://127.0.0.1:25590"
+    token: "${AETHERREACH_BRIDGE_TOKEN:-change-me}"
+    timeout_seconds: 3
+
+  minecraft_events:
+    enabled: true
+    host: "127.0.0.1"
+    port: 25591
+    token: "${MINECRAFT_EVENT_RECEIVER_TOKEN:-change-me}"
+
+web_panel:
+  enabled: true
+  host: "192.168.1.157"
+  port: 1337
+  token: "${WEB_PANEL_TOKEN:-}"
+
+  auth:
+    required_op_level: 2
+    code_ttl_seconds: 180
+    session_ttl_seconds: 28800
+
+plugins:
+  atm11_auto_update:
+    enabled: true
+    server_dir: "atm11"
+    update_dir: "updates/atm11"
+    backup_dir: "backups/atm11_updates"
+
+    check_interval_minutes: 60
+    initial_check_delay_seconds: 60
+    auto_download: false
+    postpone_failed_file_ids: true
+    keep_backups_days: 7
+    notify_discord: true
+
+    replace_dirs:
+      - "config"
+      - "defaultconfigs"
+      - "kubejs"
+      - "libraries"
+      - "mods"
+
+    replace_files:
+      - "run.sh"
+      - "startserver.sh"
+      - "server-setup-config.yaml"
+      - "user_jvm_args.txt"
+
+    preserve_custom_mods:
+      - "aetherreachcore-*.jar"
+
+    preserve_paths:
+      - "aetherreach"
+      - "kubejs"
+      - "config/aetherreachcore-common.toml"
+
+  auto_restart:
+    enabled: true
+    enabled_monitoring: true
+
+    restart_delay_seconds: 30
+    post_stop_delay_seconds: 10
+    max_crashes_in_window: 3
+    crash_window_minutes: 10
+
+    scheduled_restarts:
+      enabled: true
+      check_interval_seconds: 30
+      times:
+        - "12:00"
+        - "00:00"
+
+    restart_countdown_seconds:
+      - 300
+      - 60
+      - 30
+      - 10
+      - 5
+      - 4
+      - 3
+      - 2
+      - 1
+
+  discord_bot:
+    enabled: true
+    channel_id: 1504965232995467374
+    token: "${DISCORD_BOT_TOKEN:-}"
+
+  log_rotation:
+    enabled: true
+    keep_days: 7
+    rotate_on_wrapper_start: true
+    minecraft_logs_dir: "atm11/logs"
+
+  minecraft_events:
+    enabled: true
+
+  auto_update:
+    enabled: false
+    mode: "manual_url"
+    update_enabled: false
+    latest_file_id: 0
+    latest_display_name: "ATM11 Manual Server Pack"
+    download_url: ""
+    patch_file: "plugins/auto_update/patches.yaml"

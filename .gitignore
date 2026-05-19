@@ -1,0 +1,41 @@
+# Secrets and local environment
+.env
+WatchDog/.env
+.venv/
+WatchDog/.venv/
+
+# Python caches and test output
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# WatchDog live/runtime data
+WatchDog/atm11/
+WatchDog/logs/
+WatchDog/state/
+WatchDog/backups/
+WatchDog/downloads/
+WatchDog/tmp/
+WatchDog/crash.txt
+
+# Generated transfer/package artifacts
+server.zip
+
+# AetherReach build and IDE output
+AetherReach/.gradle/
+AetherReach/build/
+AetherReach/run/
+AetherReach/.idea/
+AetherReach/out/
+
+# Java/Gradle local output
+*.class
+*.log
+hs_err_pid*
+replay_pid*
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
