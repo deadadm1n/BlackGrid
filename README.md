@@ -58,3 +58,18 @@ wrapper update apply
 ```
 
 Wrapper updates preserve local config, `.env`, logs, state, backups, downloads, `atm11`, and update staging folders. WatchDog Helper jar updates replace the helper jar in `atm11/mods` and back up the previous jar first.
+
+## Remote WatchDog
+
+SSH automation for the Ubuntu host lives in `scripts/remote-watchdog.bat`:
+
+```powershell
+.\scripts\remote-watchdog.bat -Action status
+.\scripts\remote-watchdog.bat -Action cleanup
+.\scripts\remote-watchdog.bat -Action bootstrap -MigrateExisting
+.\scripts\remote-watchdog.bat -Action pull
+.\scripts\remote-watchdog.bat -Action start
+.\scripts\remote-watchdog.bat -Action stop
+```
+
+`bootstrap -MigrateExisting` preserves live runtime paths such as `atm11`, `.env`, logs, state, backups, downloads, tmp, and updates, then points `/home/deadadm1n/WatchDog` at the Git checkout.
