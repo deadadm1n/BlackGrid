@@ -25,4 +25,10 @@ If PowerShell blocks local scripts on your PC, use the batch launcher instead:
 .\scripts\release-aetherreach.bat -Version 1.0.0
 ```
 
+The batch launcher also accepts the version as the first argument:
+
+```powershell
+.\scripts\release-aetherreach.bat 1.0
+```
+
 The release helper builds the mod locally, creates a tag like `aetherreach-v1.0.0`, and pushes the tag. GitHub then builds the jar on Ubuntu and uploads it as a release asset.

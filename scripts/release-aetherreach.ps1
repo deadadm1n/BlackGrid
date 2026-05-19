@@ -1,10 +1,23 @@
 param(
     [Parameter(Mandatory = $true)]
-    [ValidatePattern('^\d+\.\d+\.\d+([-.][A-Za-z0-9]+)?$')]
     [string] $Version
 )
 
 $ErrorActionPreference = "Stop"
+
+$Version = $Version.Trim()
+if ($Version -match '^\d+\.\d+([-.][A-Za-z0-9]+)?$') {
+    $suffix = ""
+    if ($Version -match '^(\d+\.\d+)([-.][A-Za-z0-9]+)$') {
+        $Version = $Matches[1]
+        $suffix = $Matches[2]
+    }
+    $Version = "$Version.0$suffix"
+}
+
+if ($Version -notmatch '^\d+\.\d+\.\d+([-.][A-Za-z0-9]+)?$') {
+    Write-Error "Version must look like 1.0.0, 1.0, or 1.0.0-beta."
+}
 
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 Set-Location $repoRoot
