@@ -136,6 +136,38 @@ plugins:
   minecraft_events:
     enabled: true
 
+  github_update:
+    enabled: true
+    repository: "deadadm1n/BlackGrid"
+    update_dir: "updates/github"
+    backup_dir: "backups/github_updates"
+    check_on_start: true
+    initial_check_delay_seconds: 30
+    auto_download: false
+    managed_plugins:
+      - "github_update"
+
+    wrapper:
+      current_version: "0.1.0"
+      tag_prefix: "watchdog-v"
+      asset_pattern: "watchdog-wrapper-*.zip"
+      preserve_paths:
+        - ".env"
+        - "config/wrapper.yaml"
+        - "logs"
+        - "state"
+        - "backups"
+        - "downloads"
+        - "tmp"
+        - "atm11"
+        - "updates"
+
+    plugins:
+      tag_prefix_template: "watchdog-plugin-{name}-v"
+      asset_pattern_template: "watchdog-plugin-{name}-*.zip"
+      current_versions:
+        github_update: "0.1.0"
+
   auto_update:
     enabled: false
     mode: "manual_url"

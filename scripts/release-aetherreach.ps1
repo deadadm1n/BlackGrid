@@ -5,34 +5,16 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$Version = $Version.Trim()
-if ($Version -match '^(\d+\.\d+)(-[A-Za-z0-9][A-Za-z0-9.-]*)?$') {
-    $Version = "$($Matches[1]).0$($Matches[2])"
-}
+. (Join-Path $PSScriptRoot "release-lib.ps1")
 
-if ($Version -notmatch '^\d+\.\d+\.\d+(-[A-Za-z0-9][A-Za-z0-9.-]*)?$') {
-    Write-Error "Version must look like 1.0.0, 1.0, or 1.0.0-beta."
-}
-
-$repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+$Version = Normalize-ReleaseVersion $Version
+$repoRoot = Resolve-RepoRoot $PSScriptRoot
 Set-Location $repoRoot
 
-$status = git status --porcelain --untracked-files=no
-if ($status) {
-    Write-Error "Tracked Git files are not clean. Commit or stash tracked changes before creating a release tag."
-}
-
 $tag = "aetherreach-v$Version"
-$existingTag = git tag --list $tag
-if ($existingTag) {
-    Write-Error "Tag already exists locally: $tag"
-}
 
-git fetch origin --tags
-$remoteTag = git ls-remote --tags origin "refs/tags/$tag"
-if ($remoteTag) {
-    Write-Error "Tag already exists on origin: $tag"
-}
+Assert-TrackedTreeClean
+Assert-UniqueTag $tag
 
 Write-Host "Building AetherReach before tagging $tag..."
 Push-Location (Join-Path $repoRoot "AetherReach")

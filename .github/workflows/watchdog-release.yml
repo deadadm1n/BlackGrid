@@ -1,0 +1,82 @@
+name: WatchDog Release
+
+on:
+  push:
+    tags:
+      - "watchdog-v*"
+      - "watchdog-plugin-*-v*"
+
+permissions:
+  contents: write
+
+jobs:
+  package-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build release package
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          tag="${GITHUB_REF_NAME}"
+          mkdir -p dist package
+
+          if [[ "$tag" == watchdog-v* ]]; then
+            version="${tag#watchdog-v}"
+            asset="watchdog-wrapper-${version}.zip"
+            mkdir -p package/WatchDog/config
+
+            cp -R WatchDog/main.py WatchDog/requirements.txt WatchDog/start.sh WatchDog/startserver.bat WatchDog/web WatchDog/wrapper package/WatchDog/
+            cp WatchDog/.env.example package/WatchDog/.env.example
+            cp WatchDog/config/wrapper.yaml package/WatchDog/config/wrapper.yaml.example
+
+            (cd package && zip -r "../dist/${asset}" WatchDog)
+
+            echo "asset=dist/${asset}" >> "$GITHUB_OUTPUT"
+            echo "title=WatchDog Wrapper v${version}" >> "$GITHUB_OUTPUT"
+            echo "notes=Automated WatchDog wrapper package for ${tag}." >> "$GITHUB_OUTPUT"
+          elif [[ "$tag" =~ ^watchdog-plugin-(.+)-v(.+)$ ]]; then
+            plugin="${BASH_REMATCH[1]}"
+            version="${BASH_REMATCH[2]}"
+            plugin_dir="WatchDog/plugins/${plugin}"
+
+            if [ ! -d "$plugin_dir" ]; then
+              echo "Plugin not found: ${plugin_dir}" >&2
+              exit 1
+            fi
+
+            asset="watchdog-plugin-${plugin}-${version}.zip"
+            mkdir -p "package/WatchDog/plugins"
+            cp -R "$plugin_dir" "package/WatchDog/plugins/${plugin}"
+
+            (cd package && zip -r "../dist/${asset}" "WatchDog/plugins/${plugin}")
+
+            echo "asset=dist/${asset}" >> "$GITHUB_OUTPUT"
+            echo "title=WatchDog Plugin ${plugin} v${version}" >> "$GITHUB_OUTPUT"
+            echo "notes=Automated WatchDog plugin package for ${plugin} ${tag}." >> "$GITHUB_OUTPUT"
+          else
+            echo "Unsupported tag: ${tag}" >&2
+            exit 1
+          fi
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+          ASSET: ${{ steps.package.outputs.asset }}
+          TITLE: ${{ steps.package.outputs.title }}
+          NOTES: ${{ steps.package.outputs.notes }}
+        run: |
+          set -euo pipefail
+
+          if gh release view "$TAG_NAME" --repo "$REPO" >/dev/null 2>&1; then
+            gh release upload "$TAG_NAME" "$ASSET#$(basename "$ASSET")" --repo "$REPO" --clobber
+          else
+            gh release create "$TAG_NAME" "$ASSET#$(basename "$ASSET")" --repo "$REPO" --title "$TITLE" --notes "$NOTES"
+          fi

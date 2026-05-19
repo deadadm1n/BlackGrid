@@ -32,3 +32,26 @@ The batch launcher also accepts the version as the first argument:
 ```
 
 The release helper builds the mod locally, creates a tag like `aetherreach-v1.0.0`, and pushes the tag. GitHub then builds the jar on Ubuntu and uploads it as a release asset.
+
+## Releasing WatchDog
+
+WatchDog wrapper and plugin releases are also published from tags:
+
+```powershell
+.\scripts\release-watchdog-wrapper.bat 0.1.0
+.\scripts\release-watchdog-plugin.bat github_update 0.1.0
+```
+
+Inside the wrapper console, GitHub release updates can be checked and applied with:
+
+```text
+wrapper github update check wrapper
+wrapper github update download wrapper
+wrapper github update apply wrapper
+
+wrapper github update check plugin github_update
+wrapper github update download plugin github_update
+wrapper github update apply plugin github_update
+```
+
+Wrapper updates preserve local config, `.env`, logs, state, backups, downloads, `atm11`, and update staging folders.
