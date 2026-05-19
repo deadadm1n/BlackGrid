@@ -1,6 +1,8 @@
 # BlackGrid
 
-BlackGrid contains two related projects:
+BlackGrid Gaming Community
+
+This repository contains two related projects:
 
 - `WatchDog/` - the Python wrapper, web panel, automation plugins, and Ubuntu start script.
 - `AetherReach/` - the NeoForge Java mod that provides the Minecraft-side bridge, economy, commands, MOTD/rules, and placement protections.
