@@ -22,9 +22,9 @@ if ($Version -notmatch '^\d+\.\d+\.\d+([-.][A-Za-z0-9]+)?$') {
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 Set-Location $repoRoot
 
-$status = git status --porcelain
+$status = git status --porcelain --untracked-files=no
 if ($status) {
-    Write-Error "Git working tree is not clean. Commit or stash changes before creating a release tag."
+    Write-Error "Tracked Git files are not clean. Commit or stash tracked changes before creating a release tag."
 }
 
 $tag = "aetherreach-v$Version"
