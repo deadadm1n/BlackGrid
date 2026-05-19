@@ -19,4 +19,10 @@ AetherReach jars are built by GitHub Actions and attached to GitHub Releases. To
 .\scripts\release-aetherreach.ps1 -Version 1.0.0
 ```
 
-That script builds the mod locally, creates a tag like `aetherreach-v1.0.0`, and pushes the tag. GitHub then builds the jar on Ubuntu and uploads it as a release asset.
+If PowerShell blocks local scripts on your PC, use the batch launcher instead:
+
+```powershell
+.\scripts\release-aetherreach.bat -Version 1.0.0
+```
+
+The release helper builds the mod locally, creates a tag like `aetherreach-v1.0.0`, and pushes the tag. GitHub then builds the jar on Ubuntu and uploads it as a release asset.
