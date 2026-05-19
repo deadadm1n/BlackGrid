@@ -88,11 +88,14 @@ plugins:
       - "user_jvm_args.txt"
 
     preserve_custom_mods:
+      - "watchdog_helper-*.jar"
+      - "watchdog_helper.jar"
       - "aetherreachcore-*.jar"
 
     preserve_paths:
       - "aetherreach"
       - "kubejs"
+      - "config/watchdog_helper-common.toml"
       - "config/aetherreachcore-common.toml"
 
   auto_restart:
@@ -136,37 +139,43 @@ plugins:
   minecraft_events:
     enabled: true
 
-  github_update:
+  update_manager:
     enabled: true
     repository: "deadadm1n/BlackGrid"
-    update_dir: "updates/github"
-    backup_dir: "backups/github_updates"
-    check_on_start: true
-    initial_check_delay_seconds: 30
+    update_dir: "updates/manager"
+    backup_dir: "backups/update_manager"
     auto_download: false
-    managed_plugins:
-      - "github_update"
 
-    wrapper:
-      current_version: "0.1.0"
-      tag_prefix: "watchdog-v"
-      asset_pattern: "watchdog-wrapper-*.zip"
-      preserve_paths:
-        - ".env"
-        - "config/wrapper.yaml"
-        - "logs"
-        - "state"
-        - "backups"
-        - "downloads"
-        - "tmp"
-        - "atm11"
-        - "updates"
+    targets:
+      watchdog:
+        type: "wrapper"
+        display_name: "WatchDog"
+        current_version: "0.1.0"
+        tag_prefix: "watchdog-v"
+        asset_pattern: "watchdog-wrapper-*.zip"
+        preserve_paths:
+          - ".env"
+          - "config/wrapper.yaml"
+          - "logs"
+          - "state"
+          - "backups"
+          - "downloads"
+          - "tmp"
+          - "atm11"
+          - "updates"
 
-    plugins:
-      tag_prefix_template: "watchdog-plugin-{name}-v"
-      asset_pattern_template: "watchdog-plugin-{name}-*.zip"
-      current_versions:
-        github_update: "0.1.0"
+      watchdog_helper:
+        type: "minecraft_mod"
+        display_name: "WatchDog Helper"
+        server_name: "AetherReach"
+        current_version: "0.1.0"
+        tag_prefix: "watchdog-helper-v"
+        asset_pattern: "watchdog_helper-*.jar"
+        install_dir: "atm11/mods"
+        install_name: "watchdog_helper.jar"
+        replace_patterns:
+          - "watchdog_helper*.jar"
+          - "aetherreachcore*.jar"
 
   auto_update:
     enabled: false

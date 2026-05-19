@@ -53,39 +53,39 @@ class WrapperPlugin:
         registry = ctx.command_registry
 
         registry.register(
-            "update status",
+            "atm11 update status",
             self.cmd_status,
             "Show ATM11 update status",
             owner=self.name,
-            usage="wrapper update status",
+            usage="wrapper atm11 update status",
         )
         registry.register(
-            "update check",
+            "atm11 update check",
             self.cmd_check,
             "Check CurseForge for a new ATM11 ServerFiles update",
             owner=self.name,
-            usage="wrapper update check",
+            usage="wrapper atm11 update check",
         )
         registry.register(
-            "update download",
+            "atm11 update download",
             self.cmd_download,
             "Download the available ATM11 update without installing it",
             owner=self.name,
-            usage="wrapper update download",
+            usage="wrapper atm11 update download",
         )
         registry.register(
-            "update apply",
+            "atm11 update apply",
             self.cmd_apply,
             "Stop ATM11, install the downloaded update, validate startup, and rollback on failure",
             owner=self.name,
-            usage="wrapper update apply",
+            usage="wrapper atm11 update apply",
         )
         registry.register(
-            "update clear",
+            "atm11 update clear",
             self.cmd_clear,
             "Clear available/pending ATM11 update state",
             owner=self.name,
-            usage="wrapper update clear",
+            usage="wrapper atm11 update clear",
         )
 
     async def on_wrapper_stop(self, ctx):
@@ -166,7 +166,7 @@ class WrapperPlugin:
 
         message = (
             f"[ATM11Update] New update available: {display_name} | fileId={file_id}. "
-            "Use `wrapper update download` then `wrapper update apply` when ready."
+            "Use `wrapper atm11 update download` then `wrapper atm11 update apply` when ready."
         )
         self.ctx.logger.warning(message)
         await self.notify_discord(message)
@@ -367,7 +367,7 @@ class WrapperPlugin:
         )
         await self.notify_discord(
             f"[ATM11Update] Downloaded update: {latest['display_name']}. "
-            "Use `wrapper update apply` when ready."
+            "Use `wrapper atm11 update apply` when ready."
         )
 
     def download_file(self, url, path):
@@ -507,11 +507,11 @@ class WrapperPlugin:
         self.save_available(available)
         await self.notify_discord(
             f"[ATM11Update] New update available: {latest['display_name']} | fileId={latest['file_id']}. "
-            "Use `wrapper update download` then `wrapper update apply`."
+            "Use `wrapper atm11 update download` then `wrapper atm11 update apply`."
         )
 
         return CommandResult(
-            message=f"Update available: {latest['display_name']} ({latest['file_id']}). Run wrapper update download.",
+            message=f"Update available: {latest['display_name']} ({latest['file_id']}). Run wrapper atm11 update download.",
             data={"available": available},
         )
 
@@ -542,7 +542,7 @@ class WrapperPlugin:
         pending = self.load_pending()
 
         return CommandResult(
-            message=f"Downloaded update: {latest['display_name']}. Run wrapper update apply when ready.",
+            message=f"Downloaded update: {latest['display_name']}. Run wrapper atm11 update apply when ready.",
             data={"pending": pending or {}},
         )
 
@@ -550,7 +550,7 @@ class WrapperPlugin:
         pending = self.load_pending()
 
         if not pending:
-            return CommandResult(ok=False, message="No downloaded update is pending. Run wrapper update download first.")
+            return CommandResult(ok=False, message="No downloaded update is pending. Run wrapper atm11 update download first.")
 
         if pending.get("status") == "installed_waiting_for_boot_validation":
             return CommandResult(ok=False, message="An update is already installed and waiting for boot validation.")

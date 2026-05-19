@@ -21,12 +21,12 @@ WatchDog/crash.txt
 # Generated transfer/package artifacts
 server.zip
 
-# AetherReach build and IDE output
-AetherReach/.gradle/
-AetherReach/build/
-AetherReach/run/
-AetherReach/.idea/
-AetherReach/out/
+# WatchDog Helper build and IDE output
+WatchDogHelper/.gradle/
+WatchDogHelper/build/
+WatchDogHelper/run/
+WatchDogHelper/.idea/
+WatchDogHelper/out/
 
 # Java/Gradle local output
 *.class

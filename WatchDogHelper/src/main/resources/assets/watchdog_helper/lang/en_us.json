@@ -1,0 +1,13 @@
+{
+  "itemGroup.watchdog_helper": "Example Mod Tab",
+  "block.watchdog_helper.example_block": "Example Block",
+  "item.watchdog_helper.example_item": "Example Item",
+
+  "watchdog_helper.configuration.title": "WatchDog Helper Configs",
+  "watchdog_helper.configuration.section.watchdog_helper.common.toml": "WatchDog Helper Configs",
+  "watchdog_helper.configuration.section.watchdog_helper.common.toml.title": "WatchDog Helper Configs",
+  "watchdog_helper.configuration.items": "Item List",
+  "watchdog_helper.configuration.logDirtBlock": "Log Dirt Block",
+  "watchdog_helper.configuration.magicNumberIntroduction": "Magic Number Text",
+  "watchdog_helper.configuration.magicNumber": "Magic Number"
+}
