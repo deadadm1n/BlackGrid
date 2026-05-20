@@ -162,7 +162,7 @@ plugins:
     guild_id: 0
     token: "${DISCORD_BOT_TOKEN:-}"
 
-    # Discord rank sync.
+    # Discord linking and community roles.
     ranks:
       enabled: false
       create_missing_roles: true
@@ -171,11 +171,31 @@ plugins:
       link_command: "!link"
       link_ttl_seconds: 600
       manage_permission: "manage_roles"
-      ranks_file: "atm11/world/serverconfig/ftbranks/ranks.json5"
-      players_file: "atm11/world/serverconfig/ftbranks/players.json5"
-      ftbteams_player_dir: "atm11/world/ftbteams/player"
-      role_prefix: ""
       default_role_color: "#99aab5"
+
+      oauth:
+        enabled: false
+        client_id: "${DISCORD_CLIENT_ID:-}"
+        client_secret: "${DISCORD_CLIENT_SECRET:-}"
+        redirect_uri: "${DISCORD_REDIRECT_URI:-}"
+
+      roles:
+        owner:
+          name: "Owner"
+          color: "#f1c40f"
+        staff:
+          name: "Staff"
+          color: "#3498db"
+        vip:
+          name: "VIP"
+          color: "#9b59b6"
+        loyal:
+          name: "Loyal"
+          color: "#2ecc71"
+        member:
+          name: "Member"
+          color: "#99aab5"
+          auto_assign: true
 
   # Log cleanup.
   log_rotation:

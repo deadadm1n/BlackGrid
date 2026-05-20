@@ -79,6 +79,10 @@ public class Config {
             .comment("Discord invite URL.")
             .define("discordInviteUrl", "");
 
+    public static final ModConfigSpec.ConfigValue<String> DISCORD_LINK_URL = BUILDER
+            .comment("Discord account link URL. Use {state} where the one-time token belongs.")
+            .define("discordLinkUrl", "");
+
 
     public static final ModConfigSpec.BooleanValue WELCOME_ENABLED = BUILDER
             .comment("Enable join messages.")

@@ -46,6 +46,9 @@ exchangeName = ""
 # Discord invite URL.
 discordInviteUrl = ""
 
+# Discord account link URL.
+discordLinkUrl = ""
+
 # Enable join messages.
 welcomeEnabled = false
 

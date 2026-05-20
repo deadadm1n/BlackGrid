@@ -3,8 +3,11 @@ import json
 import re
 import time
 from pathlib import Path
+from urllib.parse import urlencode
 
+import aiohttp
 import discord
+from aiohttp import web
 
 from wrapper.core.plugin_base import WrapperPlugin
 from wrapper.core.events import (
@@ -153,6 +156,10 @@ class Plugin(WrapperPlugin):
 
             await self.send_mc_command(ctx, mc_message)
 
+        @self.client.event
+        async def on_member_join(member):
+            await self.assign_default_member_role(member)
+
         self.bot_task = asyncio.create_task(self.client.start(token))
         ctx.logger.info("[DiscordBot] Starting Discord bot task")
 
@@ -249,23 +256,41 @@ class Plugin(WrapperPlugin):
 
     def rank_definitions(self):
         ranks_cfg = self.settings.get("ranks", {})
-        ranks_file = self.ctx.resolve_path(ranks_cfg.get("ranks_file", "atm11/world/serverconfig/ftbranks/ranks.json5"))
-        data = self.read_json5_object(ranks_file)
-        definitions = {}
+        roles_cfg = ranks_cfg.get("roles")
 
-        for key, body in self.extract_named_blocks(data).items():
-            name = self.extract_string(body, "name") or key
-            color = self.extract_rank_color(body) or ranks_cfg.get("default_role_color", "#99aab5")
-            condition = self.extract_string(body, "condition")
-            definitions[key.lower()] = {
-                "key": key.lower(),
-                "name": str(name),
-                "role_name": f"{ranks_cfg.get('role_prefix', '')}{name}",
-                "color": color,
-                "condition": condition or "",
+        if isinstance(roles_cfg, dict) and roles_cfg:
+            definitions = {}
+            for key, body in roles_cfg.items():
+                if not isinstance(body, dict):
+                    body = {"name": str(body)}
+
+                role_name = str(body.get("name", key)).strip()
+                if not role_name:
+                    continue
+
+                definitions[str(key).lower()] = {
+                    "key": str(key).lower(),
+                    "name": role_name,
+                    "role_name": role_name,
+                    "color": body.get("color", ranks_cfg.get("default_role_color", "#99aab5")),
+                    "auto_assign": bool(body.get("auto_assign", False)),
+                }
+
+            return definitions
+
+        default_role = str(ranks_cfg.get("default_role_name", "")).strip()
+        if not default_role:
+            return {}
+
+        return {
+            "member": {
+                "key": "member",
+                "name": default_role,
+                "role_name": default_role,
+                "color": ranks_cfg.get("default_role_color", "#99aab5"),
+                "auto_assign": True,
             }
-
-        return definitions
+        }
 
     async def ensure_rank_roles(self):
         if not self.guild:
@@ -295,7 +320,7 @@ class Plugin(WrapperPlugin):
                         color=self.parse_color(spec.get("color", ranks_cfg.get("default_role_color", "#99aab5"))),
                         hoist=False,
                         mentionable=False,
-                        reason="WatchDog FTB rank role sync",
+                        reason="WatchDog Discord role setup",
                     )
                     if self.ctx:
                         self.ctx.logger.info("[DiscordBot] Created rank role: %s", name)
@@ -337,7 +362,7 @@ class Plugin(WrapperPlugin):
 
         if action == "sync":
             synced = await self.sync_all_linked_members()
-            await message.channel.send(f"Synced Discord roles for {synced} linked account(s).")
+            await message.channel.send(f"Checked Discord member role for {synced} linked account(s).")
             return
 
         if action == "list":
@@ -349,20 +374,20 @@ class Plugin(WrapperPlugin):
     async def handle_link_command(self, message, code):
         code = code.strip().upper()
         if not code:
-            await message.channel.send("Run `/discordlink` in-game, then use `!link <code>` here.")
+            await message.channel.send("Run `/discordlink` in-game and click the link it gives you.")
             return
 
         pending = self.load_rank_state("pending_links")
         link = pending.get(code)
         if not link:
-            await message.channel.send("That link code was not found. Run `/discordlink` in-game for a fresh code.")
+            await message.channel.send("That link token was not found. Run `/discordlink` in-game for a fresh link.")
             return
 
         expires_at = float(link.get("expires_at", 0))
         if expires_at and time.time() > expires_at:
             pending.pop(code, None)
             self.save_rank_state("pending_links", pending)
-            await message.channel.send("That link code expired. Run `/discordlink` in-game again.")
+            await message.channel.send("That link expired. Run `/discordlink` in-game again.")
             return
 
         links = self.load_rank_state("linked_accounts")
@@ -379,7 +404,7 @@ class Plugin(WrapperPlugin):
         self.save_rank_state("pending_links", pending)
 
         if self.settings.get("ranks", {}).get("sync_on_link", True):
-            await self.sync_member_roles(message.author, links[str(message.author.id)])
+            await self.assign_default_member_role(message.author)
 
         await message.channel.send(f"Linked Discord account to Minecraft player `{link['player']}`.")
 
@@ -416,6 +441,167 @@ class Plugin(WrapperPlugin):
         if self.ctx:
             self.ctx.logger.info("[DiscordBot] Stored Discord link code for %s", event.player)
 
+    def oauth_settings(self):
+        ranks_cfg = self.settings.get("ranks", {})
+        oauth_cfg = ranks_cfg.get("oauth", {})
+        if not isinstance(oauth_cfg, dict):
+            oauth_cfg = {}
+        return oauth_cfg
+
+    def oauth_enabled(self):
+        oauth_cfg = self.oauth_settings()
+        return bool(
+            oauth_cfg.get("enabled", False)
+            and oauth_cfg.get("client_id")
+            and oauth_cfg.get("client_secret")
+            and oauth_cfg.get("redirect_uri")
+        )
+
+    async def oauth_start(self, request):
+        state = str(request.query.get("state", "")).strip().upper()
+        pending = self.load_rank_state("pending_links")
+
+        if not state or state not in pending:
+            return web.Response(text="That Minecraft Discord link is invalid or expired.", status=404)
+
+        link = pending[state]
+        expires_at = float(link.get("expires_at", 0))
+        if expires_at and time.time() > expires_at:
+            pending.pop(state, None)
+            self.save_rank_state("pending_links", pending)
+            return web.Response(text="That Minecraft Discord link expired. Run /discordlink again.", status=410)
+
+        if not self.oauth_enabled():
+            return web.Response(text="Discord OAuth linking is not configured yet.", status=503)
+
+        oauth_cfg = self.oauth_settings()
+        params = {
+            "client_id": str(oauth_cfg.get("client_id", "")),
+            "redirect_uri": str(oauth_cfg.get("redirect_uri", "")),
+            "response_type": "code",
+            "scope": "identify guilds.join",
+            "state": state,
+        }
+
+        raise web.HTTPFound("https://discord.com/oauth2/authorize?" + urlencode(params))
+
+    async def oauth_callback(self, request):
+        state = str(request.query.get("state", "")).strip().upper()
+        oauth_code = str(request.query.get("code", "")).strip()
+
+        if not state or not oauth_code:
+            return web.Response(text="Discord did not return a valid link response.", status=400)
+
+        pending = self.load_rank_state("pending_links")
+        link = pending.get(state)
+
+        if not link:
+            return web.Response(text="That Minecraft Discord link was not found. Run /discordlink again.", status=404)
+
+        expires_at = float(link.get("expires_at", 0))
+        if expires_at and time.time() > expires_at:
+            pending.pop(state, None)
+            self.save_rank_state("pending_links", pending)
+            return web.Response(text="That Minecraft Discord link expired. Run /discordlink again.", status=410)
+
+        try:
+            token_data = await self.exchange_oauth_code(oauth_code)
+            user = await self.fetch_oauth_user(token_data["access_token"])
+            member = await self.ensure_discord_member(str(user["id"]), token_data["access_token"])
+        except Exception as e:
+            if self.ctx:
+                self.ctx.logger.exception("[DiscordBot] Discord OAuth link failed")
+            return web.Response(text=f"Discord link failed: {e}", status=500)
+
+        links = self.load_rank_state("linked_accounts")
+        links[str(user["id"])] = {
+            "discord_id": str(user["id"]),
+            "discord_name": self.discord_user_name(user),
+            "uuid": link["uuid"],
+            "player": link["player"],
+            "linked_at": time.time(),
+        }
+        self.save_rank_state("linked_accounts", links)
+
+        pending.pop(state, None)
+        self.save_rank_state("pending_links", pending)
+
+        if member and self.settings.get("ranks", {}).get("sync_on_link", True):
+            await self.assign_default_member_role(member)
+
+        if self.ctx:
+            self.ctx.logger.info("[DiscordBot] Linked %s to Discord user %s", link["player"], user["id"])
+
+        return web.Response(
+            text=(
+                f"Linked Discord to Minecraft player {link['player']}. "
+                "You can close this page and return to the server."
+            )
+        )
+
+    async def exchange_oauth_code(self, oauth_code):
+        oauth_cfg = self.oauth_settings()
+        data = {
+            "client_id": str(oauth_cfg.get("client_id", "")),
+            "client_secret": str(oauth_cfg.get("client_secret", "")),
+            "grant_type": "authorization_code",
+            "code": oauth_code,
+            "redirect_uri": str(oauth_cfg.get("redirect_uri", "")),
+        }
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post("https://discord.com/api/oauth2/token", data=data) as response:
+                payload = await response.json(content_type=None)
+                if response.status >= 400:
+                    raise RuntimeError(payload.get("error_description") or payload.get("error") or "OAuth token exchange failed")
+                return payload
+
+    async def fetch_oauth_user(self, access_token):
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                "https://discord.com/api/users/@me",
+                headers={"Authorization": f"Bearer {access_token}"},
+            ) as response:
+                payload = await response.json(content_type=None)
+                if response.status >= 400:
+                    raise RuntimeError("Could not read Discord user profile")
+                return payload
+
+    async def ensure_discord_member(self, discord_id, access_token):
+        if not self.guild:
+            self.guild = await self.resolve_guild(self.ctx)
+
+        if not self.guild:
+            raise RuntimeError("Discord guild is unavailable")
+
+        try:
+            return await self.guild.fetch_member(int(discord_id))
+        except discord.NotFound:
+            pass
+
+        bot_token = str(self.settings.get("token", "")).strip()
+        if not bot_token:
+            raise RuntimeError("Discord bot token is missing")
+
+        async with aiohttp.ClientSession() as session:
+            async with session.put(
+                f"https://discord.com/api/guilds/{self.guild.id}/members/{discord_id}",
+                headers={"Authorization": f"Bot {bot_token}", "Content-Type": "application/json"},
+                json={"access_token": access_token},
+            ) as response:
+                if response.status not in {200, 201, 204}:
+                    payload = await response.text()
+                    raise RuntimeError(f"Could not join Discord server: HTTP {response.status} {payload}")
+
+        return await self.guild.fetch_member(int(discord_id))
+
+    def discord_user_name(self, user):
+        username = str(user.get("username", "unknown"))
+        discriminator = str(user.get("discriminator", "0"))
+        if discriminator and discriminator != "0":
+            return f"{username}#{discriminator}"
+        return username
+
     async def sync_all_linked_members(self):
         if not self.guild:
             return 0
@@ -429,7 +615,7 @@ class Plugin(WrapperPlugin):
                 member = await self.guild.fetch_member(int(discord_id))
             except Exception:
                 continue
-            await self.sync_member_roles(member, link)
+            await self.assign_default_member_role(member)
             count += 1
 
         return count
@@ -446,31 +632,32 @@ class Plugin(WrapperPlugin):
                 member = await self.guild.fetch_member(int(discord_id))
             except Exception:
                 continue
-            await self.sync_member_roles(member, link)
+            await self.assign_default_member_role(member)
 
     async def sync_member_roles(self, member, link):
-        await self.ensure_rank_roles()
-        desired_keys = self.player_rank_keys(link)
-        desired_roles = [self.rank_roles[key] for key in desired_keys if key in self.rank_roles]
-        managed_roles = set(self.rank_roles.values())
-        current_managed = [role for role in member.roles if role in managed_roles]
-        to_add = [role for role in desired_roles if role not in member.roles]
-        to_remove = [role for role in current_managed if role not in desired_roles]
+        await self.assign_default_member_role(member)
 
-        if not to_add and not to_remove:
+    async def assign_default_member_role(self, member):
+        await self.ensure_rank_roles()
+        configured = self.rank_definitions()
+        desired_roles = [
+            self.rank_roles[key]
+            for key, spec in configured.items()
+            if spec.get("auto_assign") and key in self.rank_roles
+        ]
+        to_add = [role for role in desired_roles if role not in member.roles]
+
+        if not to_add:
             return
 
         try:
-            if to_add:
-                await member.add_roles(*to_add, reason="WatchDog FTB rank sync")
-            if to_remove:
-                await member.remove_roles(*to_remove, reason="WatchDog FTB rank sync")
+            await member.add_roles(*to_add, reason="WatchDog Discord member role")
         except discord.Forbidden:
             if self.ctx:
-                self.ctx.logger.warning("[DiscordBot] Missing role hierarchy/permissions for FTB rank sync")
+                self.ctx.logger.warning("[DiscordBot] Missing role hierarchy/permissions for Discord member role")
         except Exception:
             if self.ctx:
-                self.ctx.logger.exception("[DiscordBot] Failed to sync FTB rank roles")
+                self.ctx.logger.exception("[DiscordBot] Failed to assign Discord member role")
 
     def player_rank_keys(self, link):
         definitions = self.rank_definitions()

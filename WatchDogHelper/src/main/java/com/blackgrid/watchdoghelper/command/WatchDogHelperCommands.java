@@ -57,13 +57,32 @@ public class WatchDogHelperCommands {
                                     player.getName().getString(),
                                     code
                             );
-                            player.sendSystemMessage(
-                                    veilMsg("Discord link code: ")
-                                            .append(Component.literal(code)
-                                                    .withStyle(ChatFormatting.GOLD))
-                                            .append(Component.literal("  Use !link " + code + " in Discord.")
-                                                    .withStyle(ChatFormatting.GRAY))
-                            );
+                            String linkTemplate = Config.DISCORD_LINK_URL.get();
+
+                            if (linkTemplate != null && !linkTemplate.isBlank()) {
+                                String linkUrl = linkTemplate
+                                        .replace("{state}", code)
+                                        .replace("{code}", code);
+
+                                player.sendSystemMessage(
+                                        veilMsg("Link Discord: ")
+                                                .append(Component.literal("Click here")
+                                                        .withStyle(style -> style
+                                                                .withColor(ChatFormatting.AQUA)
+                                                                .withUnderlined(true)
+                                                                .withClickEvent(new ClickEvent.OpenUrl(URI.create(linkUrl)))))
+                                                .append(Component.literal(" to join and sync your role.")
+                                                        .withStyle(ChatFormatting.GRAY))
+                                );
+                            } else {
+                                player.sendSystemMessage(
+                                        veilMsg("Discord link code: ")
+                                                .append(Component.literal(code)
+                                                        .withStyle(ChatFormatting.GOLD))
+                                                .append(Component.literal("  Use !link " + code + " in Discord.")
+                                                        .withStyle(ChatFormatting.GRAY))
+                                );
+                            }
                             return 1;
                         })
         );

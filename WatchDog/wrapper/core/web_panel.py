@@ -39,6 +39,8 @@ class WebPanel:
         self.app.router.add_post("/api/command", self.api_command)
         self.app.router.add_post("/api/veil", self.api_veil)
         self.app.router.add_post("/api/restart", self.api_restart)
+        self.app.router.add_get("/discord/oauth/start", self.discord_oauth_start)
+        self.app.router.add_get("/discord/oauth/callback", self.discord_oauth_callback)
 
         if self.web_root.exists():
             self.app.router.add_static("/static", self.web_root)
@@ -221,6 +223,29 @@ class WebPanel:
         response = web.json_response({"ok": True})
         response.del_cookie("watchdog_session")
         return response
+
+    def discord_bot_plugin(self):
+        loader = getattr(self.ctx, "plugin_loader", None)
+        plugins = getattr(loader, "plugins", {}) if loader else {}
+        return plugins.get("discord_bot")
+
+    async def discord_oauth_start(self, request):
+        plugin = self.discord_bot_plugin()
+        handler = getattr(plugin, "oauth_start", None)
+
+        if not callable(handler):
+            return web.Response(text="Discord linking is not available.", status=404)
+
+        return await handler(request)
+
+    async def discord_oauth_callback(self, request):
+        plugin = self.discord_bot_plugin()
+        handler = getattr(plugin, "oauth_callback", None)
+
+        if not callable(handler):
+            return web.Response(text="Discord linking is not available.", status=404)
+
+        return await handler(request)
 
     async def api_status(self, request):
         await self.require_auth(request)
