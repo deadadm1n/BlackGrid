@@ -22,6 +22,7 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.permissions.PermissionCheck;
 import net.minecraft.server.permissions.Permissions;
+import net.minecraft.world.entity.Entity;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
@@ -72,16 +73,13 @@ public class WatchDogHelperCommands {
                         .executes(ctx -> sendDiscordLink(ctx.getSource()))
                         .then(Commands.literal("invite")
                                 .executes(ctx -> {
-                            ctx.getSource().sendSuccess(
-                                    () -> veilPrefixComponent()
-                                            .append(Component.literal("Join the Discord")
-                                                    .withStyle(style -> style
-                                                            .withColor(ChatFormatting.AQUA)
-                                                            .withUnderlined(true)
-                                                            .withClickEvent(new ClickEvent.OpenUrl(
-                                                                    URI.create(Config.DISCORD_INVITE_URL.get()))))),
-                                    false
-                            );
+                            sendPublic(ctx.getSource(), veilPrefixComponent()
+                                    .append(Component.literal("Join the Discord")
+                                            .withStyle(style -> style
+                                                    .withColor(ChatFormatting.AQUA)
+                                                    .withUnderlined(true)
+                                                    .withClickEvent(new ClickEvent.OpenUrl(
+                                                            URI.create(Config.DISCORD_INVITE_URL.get()))))));
                             return 1;
                         }))
         );
@@ -111,14 +109,11 @@ public class WatchDogHelperCommands {
         String name = CurrencyService.currencyName();
         int reward = CurrencyService.getRewardPerCycle(player);
 
-        source.sendSuccess(
-                () -> veilMsg("Your Balance: ")
-                        .append(Component.literal(balance + " " + name)
-                                .withStyle(ChatFormatting.GOLD))
-                        .append(Component.literal("  (+" + reward + "/15 min)")
-                                .withStyle(ChatFormatting.DARK_GRAY)),
-                false
-        );
+        sendPublic(source, veilMsg("Your Balance: ")
+                .append(Component.literal(balance + " " + name)
+                        .withStyle(ChatFormatting.GOLD))
+                .append(Component.literal("  (+" + reward + "/15 min)")
+                        .withStyle(ChatFormatting.DARK_GRAY)));
     }
 
     private void registerAuctionHouse(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -555,48 +550,33 @@ public class WatchDogHelperCommands {
 
     private static int sendShop(CommandSourceStack source) {
         List<ShopListing> listings = ShopService.getCurrentRotation(source.getServer());
-        source.sendSuccess(
-                () -> veilMsg(Config.SHOP_NAME.get() + " - Current Rotation"),
-                false
-        );
+        sendPublic(source, veilMsg(Config.SHOP_NAME.get() + " - Current Rotation"));
 
         if (listings.isEmpty()) {
-            source.sendSuccess(
-                    () -> Component.literal("The import lattice is quiet. Try again after the next synchronization.")
-                            .withStyle(ChatFormatting.GRAY),
-                    false
-            );
+            sendPublic(source, Component.literal("The import lattice is quiet. Try again after the next synchronization.")
+                    .withStyle(ChatFormatting.GRAY));
             return 1;
         }
 
         for (ShopListing listing : listings) {
-            source.sendSuccess(
-                    () -> Component.literal("[" + listing.slot() + "] ")
-                            .withStyle(ChatFormatting.AQUA)
-                            .append(Component.literal(listing.itemName() + " x" + listing.quantity())
-                                    .withStyle(ChatFormatting.WHITE))
-                            .append(Component.literal(" - " + listing.price() + " " + CurrencyService.currencyName())
-                                    .withStyle(ChatFormatting.GOLD)),
-                    false
-            );
+            sendPublic(source, Component.literal("[" + listing.slot() + "] ")
+                    .withStyle(ChatFormatting.AQUA)
+                    .append(Component.literal(listing.itemName() + " x" + listing.quantity())
+                            .withStyle(ChatFormatting.WHITE))
+                    .append(Component.literal(" - " + listing.price() + " " + CurrencyService.currencyName())
+                            .withStyle(ChatFormatting.GOLD)));
         }
 
         return 1;
     }
 
     private static int sendRules(CommandSourceStack source) {
-        source.sendSuccess(
-                () -> veilMsg(Config.RULES_TITLE.get()),
-                false
-        );
+        sendPublic(source, veilMsg(Config.RULES_TITLE.get()));
 
         String rules = Config.RULES_MESSAGE.get();
 
         if (rules == null || rules.isBlank()) {
-            source.sendSuccess(
-                    () -> Component.literal("No rules are configured yet.").withStyle(ChatFormatting.GRAY),
-                    false
-            );
+            sendPublic(source, Component.literal("No rules are configured yet.").withStyle(ChatFormatting.GRAY));
             return 1;
         }
 
@@ -604,13 +584,10 @@ public class WatchDogHelperCommands {
             String trimmed = line.trim();
 
             if (!trimmed.isBlank()) {
-                source.sendSuccess(
-                        () -> Component.literal(" - ")
-                                .withStyle(ChatFormatting.DARK_GRAY)
-                                .append(Component.literal(trimmed)
-                                        .withStyle(ChatFormatting.GRAY)),
-                        false
-                );
+                sendPublic(source, Component.literal(" - ")
+                        .withStyle(ChatFormatting.DARK_GRAY)
+                        .append(Component.literal(trimmed)
+                                .withStyle(ChatFormatting.GRAY)));
             }
         }
 
@@ -619,34 +596,36 @@ public class WatchDogHelperCommands {
 
     private static int sendAuctionList(CommandSourceStack source, int page) {
         List<AuctionListing> listings = AuctionHouseService.listActive(page);
-        source.sendSuccess(
-                () -> veilMsg(Config.EXCHANGE_NAME.get() + " - Page " + page),
-                false
-        );
+        sendPublic(source, veilMsg(Config.EXCHANGE_NAME.get() + " - Page " + page));
 
         if (listings.isEmpty()) {
-            source.sendSuccess(
-                    () -> Component.literal("No active listings found.").withStyle(ChatFormatting.GRAY),
-                    false
-            );
+            sendPublic(source, Component.literal("No active listings found.").withStyle(ChatFormatting.GRAY));
             return 1;
         }
 
         for (AuctionListing listing : listings) {
-            source.sendSuccess(
-                    () -> Component.literal("#" + listing.id() + " ")
-                            .withStyle(ChatFormatting.AQUA)
-                            .append(Component.literal(listing.itemName() + " x" + listing.quantity())
-                                    .withStyle(ChatFormatting.WHITE))
-                            .append(Component.literal(" - " + listing.price() + " " + CurrencyService.currencyName())
-                                    .withStyle(ChatFormatting.GOLD))
-                            .append(Component.literal(" - " + listing.sellerName())
-                                    .withStyle(ChatFormatting.GRAY)),
-                    false
-            );
+            sendPublic(source, Component.literal("#" + listing.id() + " ")
+                    .withStyle(ChatFormatting.AQUA)
+                    .append(Component.literal(listing.itemName() + " x" + listing.quantity())
+                            .withStyle(ChatFormatting.WHITE))
+                    .append(Component.literal(" - " + listing.price() + " " + CurrencyService.currencyName())
+                            .withStyle(ChatFormatting.GOLD))
+                    .append(Component.literal(" - " + listing.sellerName())
+                            .withStyle(ChatFormatting.GRAY)));
         }
 
         return 1;
+    }
+
+    private static void sendPublic(CommandSourceStack source, Component message) {
+        Entity entity = source.getEntity();
+
+        if (entity instanceof ServerPlayer player) {
+            player.sendSystemMessage(message);
+            return;
+        }
+
+        source.sendSuccess(() -> message, false);
     }
 
     private static int sendDiscordLink(CommandSourceStack source) throws CommandSyntaxException {
