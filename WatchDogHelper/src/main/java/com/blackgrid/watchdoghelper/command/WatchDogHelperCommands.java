@@ -3,6 +3,7 @@ package com.blackgrid.watchdoghelper.command;
 import com.blackgrid.watchdoghelper.Config;
 import com.blackgrid.watchdoghelper.auction.AuctionHouseService;
 import com.blackgrid.watchdoghelper.auction.AuctionListing;
+import com.blackgrid.watchdoghelper.bridge.WatchdogEventClient;
 import com.blackgrid.watchdoghelper.currency.CurrencyAccount;
 import com.blackgrid.watchdoghelper.currency.CurrencyService;
 import com.blackgrid.watchdoghelper.shop.ShopListing;
@@ -24,7 +25,9 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
 import java.net.URI;
+import java.util.Locale;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class WatchDogHelperCommands {
 
@@ -34,12 +37,41 @@ public class WatchDogHelperCommands {
 
         registerRules(dispatcher);
         registerDiscord(dispatcher);
+        registerDiscordLink(dispatcher);
         registerBalance(dispatcher);
         registerPay(dispatcher);
         registerAuctionHouse(dispatcher);
         registerShop(dispatcher);
         registerCurrencyAdmin(dispatcher);
         registerAetherreachAdmin(dispatcher);
+    }
+
+    private void registerDiscordLink(CommandDispatcher<CommandSourceStack> dispatcher) {
+        dispatcher.register(
+                Commands.literal("discordlink")
+                        .executes(ctx -> {
+                            ServerPlayer player = ctx.getSource().getPlayerOrException();
+                            String code = generateLinkCode();
+                            WatchdogEventClient.sendDiscordLinkEvent(
+                                    player.getUUID().toString(),
+                                    player.getName().getString(),
+                                    code
+                            );
+                            player.sendSystemMessage(
+                                    veilMsg("Discord link code: ")
+                                            .append(Component.literal(code)
+                                                    .withStyle(ChatFormatting.GOLD))
+                                            .append(Component.literal("  Use !link " + code + " in Discord.")
+                                                    .withStyle(ChatFormatting.GRAY))
+                            );
+                            return 1;
+                        })
+        );
+
+        dispatcher.register(
+                Commands.literal("linkdiscord")
+                        .executes(ctx -> dispatcher.execute("discordlink", ctx.getSource()))
+        );
     }
 
     private void registerRules(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -646,6 +678,11 @@ public class WatchDogHelperCommands {
 
     private static MutableComponent adminMsg(String text) {
         return veilMsg(text);
+    }
+
+    private static String generateLinkCode() {
+        int value = ThreadLocalRandom.current().nextInt(0x1000000);
+        return String.format(Locale.ROOT, "%06X", value);
     }
 
     private static MutableComponent veilPrefixComponent() {

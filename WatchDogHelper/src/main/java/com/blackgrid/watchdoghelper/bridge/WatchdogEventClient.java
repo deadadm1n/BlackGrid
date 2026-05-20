@@ -18,6 +18,20 @@ public final class WatchdogEventClient {
     }
 
     public static void sendChatEvent(String uuid, String player, String message) {
+        sendEvent("\"type\":\"chat\","
+                + "\"uuid\":\"" + escapeJson(uuid) + "\","
+                + "\"player\":\"" + escapeJson(player) + "\","
+                + "\"message\":\"" + escapeJson(message) + "\"");
+    }
+
+    public static void sendDiscordLinkEvent(String uuid, String player, String code) {
+        sendEvent("\"type\":\"discord_link\","
+                + "\"uuid\":\"" + escapeJson(uuid) + "\","
+                + "\"player\":\"" + escapeJson(player) + "\","
+                + "\"code\":\"" + escapeJson(code) + "\"");
+    }
+
+    private static void sendEvent(String jsonFields) {
         if (!Config.WATCHDOG_CALLBACK_ENABLED.get()) {
             return;
         }
@@ -36,10 +50,7 @@ public final class WatchdogEventClient {
 
         String json = "{"
                 + "\"token\":\"" + escapeJson(token) + "\","
-                + "\"type\":\"chat\","
-                + "\"uuid\":\"" + escapeJson(uuid) + "\","
-                + "\"player\":\"" + escapeJson(player) + "\","
-                + "\"message\":\"" + escapeJson(message) + "\""
+                + jsonFields
                 + "}";
 
         HttpRequest request = HttpRequest.newBuilder()

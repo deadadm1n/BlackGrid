@@ -1,6 +1,6 @@
 import json
 from aiohttp import web
-from wrapper.core.events import ChatMessageEvent
+from wrapper.core.events import ChatMessageEvent, DiscordLinkEvent
 
 
 class MinecraftEventReceiver:
@@ -52,6 +52,10 @@ class MinecraftEventReceiver:
             await self.handle_chat(data)
             return web.json_response({"ok": True})
 
+        if event_type == "discord_link":
+            await self.handle_discord_link(data)
+            return web.json_response({"ok": True})
+
         return web.json_response(
             {"ok": False, "error": f"unknown_event:{event_type}"},
             status=400,
@@ -82,3 +86,23 @@ class MinecraftEventReceiver:
         )
 
         self.ctx.logger.info("[MinecraftEventReceiver] Published ChatMessageEvent")
+
+    async def handle_discord_link(self, data: dict):
+        uuid = str(data.get("uuid", "")).strip()
+        player = str(data.get("player", "")).strip()
+        code = str(data.get("code", "")).strip().upper()
+
+        if not uuid or not player or not code:
+            self.ctx.logger.warning("[MinecraftEventReceiver] Empty discord link payload; ignored")
+            return
+
+        await self.ctx.event_bus.publish(
+            DiscordLinkEvent(
+                raw=f"{player}:{code}",
+                uuid=uuid,
+                player=player,
+                code=code,
+            )
+        )
+
+        self.ctx.logger.info("[MinecraftEventReceiver] Published DiscordLinkEvent player=%s", player)

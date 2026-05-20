@@ -128,7 +128,22 @@ plugins:
   discord_bot:
     enabled: true
     channel_id: 1504965232995467374
+    guild_id: 0
     token: "${DISCORD_BOT_TOKEN:-}"
+
+    ranks:
+      enabled: true
+      create_missing_roles: true
+      sync_on_link: true
+      sync_on_join: true
+      link_command: "!link"
+      link_ttl_seconds: 600
+      manage_permission: "manage_roles"
+      ranks_file: "atm11/world/serverconfig/ftbranks/ranks.json5"
+      players_file: "atm11/world/serverconfig/ftbranks/players.json5"
+      ftbteams_player_dir: "atm11/world/ftbteams/player"
+      role_prefix: "AetherReach "
+      default_role_color: "#99aab5"
 
   log_rotation:
     enabled: true

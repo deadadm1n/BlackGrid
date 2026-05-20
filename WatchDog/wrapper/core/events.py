@@ -44,6 +44,13 @@ class ChatMessageEvent(Event):
 
 
 @dataclass
+class DiscordLinkEvent(Event):
+    uuid: str = ""
+    player: str = ""
+    code: str = ""
+
+
+@dataclass
 class ServerCrashEvent(Event):
     reason: str = ""
 
