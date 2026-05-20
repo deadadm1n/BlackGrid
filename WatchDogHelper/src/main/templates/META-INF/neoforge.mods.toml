@@ -40,7 +40,7 @@ authors="DeadAdm1n"
 
 # The description text for the mod (multi line!) (#mandatory)
 description='''
-Minecraft-side helper for the AetherReach ATM11 server. It gives WatchDog bridge access, server events, and AetherReach gameplay features.
+Minecraft-side helper for WatchDog. It provides bridge access, server events, and configurable gameplay features.
 '''
 
 # The [[mixins]] block allows you to declare your mixin config to FML so that it gets loaded.

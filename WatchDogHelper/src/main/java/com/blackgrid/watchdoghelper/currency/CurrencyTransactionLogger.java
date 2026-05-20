@@ -23,7 +23,7 @@ public final class CurrencyTransactionLogger {
             Files.createDirectories(LOG_FILE.getParent());
             Files.writeString(LOG_FILE, line, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         } catch (IOException e) {
-            WatchDogHelper.LOGGER.error("[Aetherreach] Failed to write currency transaction log.", e);
+            WatchDogHelper.LOGGER.error("[WatchDog Helper] Failed to write currency transaction log.", e);
         }
     }
 

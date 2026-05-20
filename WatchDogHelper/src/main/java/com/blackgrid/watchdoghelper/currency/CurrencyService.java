@@ -127,7 +127,7 @@ public class CurrencyService {
                     }
                 }
             } catch (Exception e) {
-                WatchDogHelper.LOGGER.warn("[Aetherreach] Failed to read FTB Ranks permission '{}': {}", node, e.getMessage());
+                WatchDogHelper.LOGGER.warn("[WatchDog Helper] Failed to read FTB Ranks permission '{}': {}", node, e.getMessage());
             }
         }
 
@@ -166,7 +166,7 @@ public class CurrencyService {
 
     public static void reloadStorage() {
         storage.reload();
-        WatchDogHelper.LOGGER.info("[Aetherreach] Currency storage reloaded.");
+        WatchDogHelper.LOGGER.info("[WatchDog Helper] Currency storage reloaded.");
     }
 
     public static String currencyName() {

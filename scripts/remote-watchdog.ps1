@@ -2,14 +2,18 @@ param(
     [ValidateSet("status", "cleanup", "bootstrap", "start", "stop", "restart", "pull")]
     [string] $Action = "status",
 
-    [string] $HostAlias = "deadadmin",
-    [string] $RemoteRoot = "/home/deadadm1n",
-    [string] $RepoUrl = "https://github.com/deadadm1n/BlackGrid.git",
+    [string] $HostAlias = "",
+    [string] $RemoteRoot = "",
+    [string] $RepoUrl = "",
     [string] $Branch = "main",
     [switch] $MigrateExisting
 )
 
 $ErrorActionPreference = "Stop"
+
+if (-not $HostAlias -or -not $RemoteRoot -or -not $RepoUrl) {
+    throw "Set -HostAlias, -RemoteRoot, and -RepoUrl before using remote automation."
+}
 
 function Invoke-Remote {
     param([Parameter(Mandatory = $true)][string] $Script)

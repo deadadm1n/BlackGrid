@@ -42,7 +42,7 @@ class Plugin(WrapperPlugin):
         ctx.event_bus.subscribe(DiscordLinkEvent, self.on_discord_link_request)
 
         # Fallback only. Normal Minecraft chat now comes through:
-        # Aether Reach -> HTTP -> MinecraftEventReceiver -> send_minecraft_chat()
+        # WatchDog Helper -> HTTP -> MinecraftEventReceiver -> send_minecraft_chat()
         ctx.event_bus.subscribe(ChatMessageEvent, self.on_mc_chat)
 
     async def on_wrapper_start(self, ctx):
@@ -131,13 +131,13 @@ class Plugin(WrapperPlugin):
             safe_name = message.author.display_name.replace("@", "")
 
             # Primary path:
-            # Discord -> Watchdog -> Aether Reach HTTP bridge -> Minecraft
+            # Discord -> WatchDog -> helper HTTP bridge -> Minecraft
             delivered = await ctx.aetherreach.discord_message(safe_name, content)
 
             if delivered:
                 return
 
-            # Fallback path if Aether Reach bridge is down.
+            # Fallback path if the helper bridge is down.
             escaped_name = safe_name.replace("\\", "\\\\").replace('"', '\\"')
             escaped_content = content.replace("\\", "\\\\").replace('"', '\\"')
 
@@ -160,7 +160,7 @@ class Plugin(WrapperPlugin):
         if self.client:
             await self.send_discord(
                 "```ansi\n"
-                "[Watchdog] Aetherreach link closed.\n"
+                f"[{self.helper_display_name()}] Server link closed.\n"
                 "Monitoring systems offline.\n"
                 "```"
             )
@@ -189,12 +189,18 @@ class Plugin(WrapperPlugin):
         if self.channel:
             await self.channel.send(message)
 
+    def server_display_name(self):
+        return str(self.settings.get("server_name", "") or "Minecraft").strip()
+
+    def helper_display_name(self):
+        return str(self.settings.get("helper_name", "") or "WatchDog").strip()
+
     async def send_minecraft_chat(self, player: str, message: str):
         """
         Primary Minecraft -> Discord bridge path.
 
         Called by:
-        Aether Reach Java chat event
+        WatchDog Helper Java chat event
         -> Watchdog MinecraftEventReceiver
         -> discord_bot.send_minecraft_chat()
         """
@@ -212,7 +218,7 @@ class Plugin(WrapperPlugin):
             return
 
         try:
-            await self.channel.send(f"**[AetherReach] {player}** > {message}")
+            await self.channel.send(f"**[{self.server_display_name()}] {player}** > {message}")
 
             if self.ctx:
                 self.ctx.logger.info(
@@ -576,16 +582,15 @@ class Plugin(WrapperPlugin):
     async def on_server_started(self, event):
         await self.send_discord(
             "```ansi\n"
-            "[The Veil] Dimensional resonance has stabilized.\n"
-            "Aetherreach is online.\n"
-            "The Reach awakens once more.\n"
+            f"[{self.helper_display_name()}] Server is online.\n"
+            "Monitoring systems active.\n"
             "```"
         )
 
         try:
             if self.ctx and getattr(self.ctx, "aetherreach", None):
                 await self.ctx.aetherreach.veil(
-                    "Dimensional resonance has stabilized. The Reach awakens."
+                    "Server is online."
                 )
         except Exception:
             if self.ctx:
@@ -594,7 +599,7 @@ class Plugin(WrapperPlugin):
     async def on_server_stopping(self, event):
         await self.send_discord(
             "```ansi\n"
-            "[Watchdog] Aetherreach shutdown sequence detected.\n"
+            f"[{self.helper_display_name()}] Shutdown sequence detected.\n"
             "Server entering controlled stop.\n"
             "```"
         )
@@ -602,7 +607,7 @@ class Plugin(WrapperPlugin):
     async def on_server_stopped(self, event):
         await self.send_discord(
             "```ansi\n"
-            "[Watchdog] Aetherreach stopped.\n"
+            f"[{self.helper_display_name()}] Server stopped.\n"
             f"Exit code: {event.exit_code}\n"
             "```"
         )
@@ -610,7 +615,7 @@ class Plugin(WrapperPlugin):
     async def on_server_unexpected_exit(self, ctx, exit_code):
         await self.send_discord(
             "```ansi\n"
-            "[Watchdog] Aetherreach stopped unexpectedly.\n"
+            f"[{self.helper_display_name()}] Server stopped unexpectedly.\n"
             f"Exit code: {exit_code}\n"
             "Recovery evaluation started.\n"
             "```"
@@ -620,7 +625,7 @@ class Plugin(WrapperPlugin):
         restart_type = "Scheduled reset" if scheduled else "Emergency restart"
         await self.send_discord(
             "```ansi\n"
-            f"[Watchdog] Aetherreach {restart_type.lower()} initiated.\n"
+            f"[{self.helper_display_name()}] {restart_type} initiated.\n"
             f"Reason: {reason}\n"
             "Recovery sequence active.\n"
             "```"
@@ -628,14 +633,14 @@ class Plugin(WrapperPlugin):
 
     async def on_player_join(self, event):
         await self.send_discord(
-            f"`{event.player}` has crossed into **AetherReach**."
+            f"`{event.player}` joined **{self.server_display_name()}**."
         )
         if self.ranks_enabled() and self.settings.get("ranks", {}).get("sync_on_join", True):
             await self.sync_linked_player(event.player)
 
     async def on_player_leave(self, event):
         await self.send_discord(
-            f"`{event.player}` has faded beyond **The Veil**."
+            f"`{event.player}` left **{self.server_display_name()}**."
         )
 
     async def on_mc_chat(self, event):

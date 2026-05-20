@@ -48,7 +48,7 @@ public final class AuctionHouseService {
         }
 
         if (isBlacklisted(held)) {
-            throw new IllegalArgumentException("The Veil refuses this item within The Exchange.");
+            throw new IllegalArgumentException("This item cannot be listed right now.");
         }
 
         int limit = CurrencyService.getAuctionListingLimit(seller);
@@ -95,7 +95,7 @@ public final class AuctionHouseService {
             }
         } catch (Exception e) {
             seller.setItemInHand(InteractionHand.MAIN_HAND, listed);
-            WatchDogHelper.LOGGER.error("[Aetherreach] Failed to create auction listing.", e);
+            WatchDogHelper.LOGGER.error("[WatchDog Helper] Failed to create auction listing.", e);
             throw new RuntimeException("Listing creation failed; item returned.", e);
         }
 
@@ -131,7 +131,7 @@ public final class AuctionHouseService {
                 }
             }
         } catch (Exception e) {
-            WatchDogHelper.LOGGER.error("[Aetherreach] Failed to list auction listings.", e);
+            WatchDogHelper.LOGGER.error("[WatchDog Helper] Failed to list auction listings.", e);
         }
 
         return listings;
@@ -155,7 +155,7 @@ public final class AuctionHouseService {
                 }
             }
         } catch (Exception e) {
-            WatchDogHelper.LOGGER.error("[Aetherreach] Failed to load auction listing {}.", listingId, e);
+            WatchDogHelper.LOGGER.error("[WatchDog Helper] Failed to load auction listing {}.", listingId, e);
         }
 
         return Optional.empty();
@@ -198,7 +198,7 @@ public final class AuctionHouseService {
             throw e;
         } catch (Exception e) {
             CurrencyService.addBalance(buyer, listing.price(), "AH_BUY_REFUND", "listing:" + listing.id());
-            WatchDogHelper.LOGGER.error("[Aetherreach] Failed to complete auction purchase {}.", listing.id(), e);
+            WatchDogHelper.LOGGER.error("[WatchDog Helper] Failed to complete auction purchase {}.", listing.id(), e);
             throw new RuntimeException("Purchase failed; Shards refunded.", e);
         }
     }
@@ -225,7 +225,7 @@ public final class AuctionHouseService {
         } catch (IllegalArgumentException e) {
             throw e;
         } catch (Exception e) {
-            WatchDogHelper.LOGGER.error("[Aetherreach] Failed to cancel listing {}.", listingId, e);
+            WatchDogHelper.LOGGER.error("[WatchDog Helper] Failed to cancel listing {}.", listingId, e);
             throw new RuntimeException("Cancel failed.", e);
         }
     }
@@ -265,7 +265,7 @@ public final class AuctionHouseService {
                 }
             }
         } catch (Exception e) {
-            WatchDogHelper.LOGGER.error("[Aetherreach] Failed to claim expired listings for {}.", player.getName().getString(), e);
+            WatchDogHelper.LOGGER.error("[WatchDog Helper] Failed to claim expired listings for {}.", player.getName().getString(), e);
         }
 
         return claimed;
@@ -282,7 +282,7 @@ public final class AuctionHouseService {
                 return statement.executeUpdate() > 0;
             }
         } catch (Exception e) {
-            WatchDogHelper.LOGGER.error("[Aetherreach] Failed to admin-remove listing {}.", listingId, e);
+            WatchDogHelper.LOGGER.error("[WatchDog Helper] Failed to admin-remove listing {}.", listingId, e);
             return false;
         }
     }
@@ -304,7 +304,7 @@ public final class AuctionHouseService {
                 }
             }
         } catch (Exception e) {
-            WatchDogHelper.LOGGER.error("[Aetherreach] Failed to load owned listing {}.", listingId, e);
+            WatchDogHelper.LOGGER.error("[WatchDog Helper] Failed to load owned listing {}.", listingId, e);
         }
 
         return Optional.empty();
@@ -328,7 +328,7 @@ public final class AuctionHouseService {
                 }
             }
         } catch (Exception e) {
-            WatchDogHelper.LOGGER.error("[Aetherreach] Failed to count active listings for {}.", sellerUuid, e);
+            WatchDogHelper.LOGGER.error("[WatchDog Helper] Failed to count active listings for {}.", sellerUuid, e);
         }
 
         return 0;
@@ -397,7 +397,7 @@ public final class AuctionHouseService {
             statement.setString(5, Instant.now().toString());
             statement.executeUpdate();
         } catch (Exception e) {
-            WatchDogHelper.LOGGER.warn("[Aetherreach] Failed to log auction transaction {}.", listing.id(), e);
+            WatchDogHelper.LOGGER.warn("[WatchDog Helper] Failed to log auction transaction {}.", listing.id(), e);
         }
     }
 

@@ -53,7 +53,7 @@ public class SqliteCurrencyStorage implements CurrencyStorage {
             statement.setLong(4, now);
             statement.executeUpdate();
         } catch (Exception e) {
-            WatchDogHelper.LOGGER.error("[Aetherreach] Failed to create currency account for {}", uuid, e);
+            WatchDogHelper.LOGGER.error("[WatchDog Helper] Failed to create currency account for {}", uuid, e);
         }
 
         return get(uuid).orElse(new CurrencyAccount(uuid, safeName(uuid, name), 0L));
@@ -78,7 +78,7 @@ public class SqliteCurrencyStorage implements CurrencyStorage {
                 return Optional.of(account);
             }
         } catch (Exception e) {
-            WatchDogHelper.LOGGER.error("[Aetherreach] Failed to load currency account for {}", uuid, e);
+            WatchDogHelper.LOGGER.error("[WatchDog Helper] Failed to load currency account for {}", uuid, e);
             return Optional.empty();
         }
     }
@@ -105,7 +105,7 @@ public class SqliteCurrencyStorage implements CurrencyStorage {
             statement.executeUpdate();
             return safeAmount;
         } catch (Exception e) {
-            WatchDogHelper.LOGGER.error("[Aetherreach] Failed to set currency balance for {}", uuid, e);
+            WatchDogHelper.LOGGER.error("[WatchDog Helper] Failed to set currency balance for {}", uuid, e);
             return account.getBalance();
         }
     }
@@ -128,7 +128,7 @@ public class SqliteCurrencyStorage implements CurrencyStorage {
             statement.executeUpdate();
             return getBalance(uuid, name);
         } catch (Exception e) {
-            WatchDogHelper.LOGGER.error("[Aetherreach] Failed to add currency balance for {}", uuid, e);
+            WatchDogHelper.LOGGER.error("[WatchDog Helper] Failed to add currency balance for {}", uuid, e);
             return getBalance(uuid, name);
         }
     }
@@ -151,7 +151,7 @@ public class SqliteCurrencyStorage implements CurrencyStorage {
             statement.setLong(6, safeAmount);
             return statement.executeUpdate() > 0;
         } catch (Exception e) {
-            WatchDogHelper.LOGGER.error("[Aetherreach] Failed to deduct currency balance for {}", uuid, e);
+            WatchDogHelper.LOGGER.error("[WatchDog Helper] Failed to deduct currency balance for {}", uuid, e);
             return false;
         }
     }
@@ -176,7 +176,7 @@ public class SqliteCurrencyStorage implements CurrencyStorage {
                 }
             }
         } catch (Exception e) {
-            WatchDogHelper.LOGGER.error("[Aetherreach] Failed to list top balances.", e);
+            WatchDogHelper.LOGGER.error("[WatchDog Helper] Failed to list top balances.", e);
         }
 
         return accounts;
@@ -190,7 +190,7 @@ public class SqliteCurrencyStorage implements CurrencyStorage {
             initializeSchema();
             migrateLegacyJsonIfNeeded();
         } catch (Exception e) {
-            WatchDogHelper.LOGGER.error("[Aetherreach] Failed to initialize SQLite economy storage '{}'.", file, e);
+            WatchDogHelper.LOGGER.error("[WatchDog Helper] Failed to initialize SQLite economy storage '{}'.", file, e);
         }
     }
 
@@ -241,7 +241,7 @@ public class SqliteCurrencyStorage implements CurrencyStorage {
                 return;
             }
         } catch (Exception e) {
-            WatchDogHelper.LOGGER.warn("[Aetherreach] Could not check SQLite migration state.", e);
+            WatchDogHelper.LOGGER.warn("[WatchDog Helper] Could not check SQLite migration state.", e);
             return;
         }
 
@@ -257,9 +257,9 @@ public class SqliteCurrencyStorage implements CurrencyStorage {
 
             Path migrated = legacyJsonFile.resolveSibling(legacyJsonFile.getFileName() + ".migrated-" + Instant.now().toEpochMilli());
             Files.move(legacyJsonFile, migrated);
-            WatchDogHelper.LOGGER.info("[Aetherreach] Migrated {} currency account(s) from JSON to SQLite.", accounts.size());
+            WatchDogHelper.LOGGER.info("[WatchDog Helper] Migrated {} currency account(s) from JSON to SQLite.", accounts.size());
         } catch (Exception e) {
-            WatchDogHelper.LOGGER.error("[Aetherreach] Failed to migrate legacy JSON currency storage.", e);
+            WatchDogHelper.LOGGER.error("[WatchDog Helper] Failed to migrate legacy JSON currency storage.", e);
         }
     }
 
@@ -274,7 +274,7 @@ public class SqliteCurrencyStorage implements CurrencyStorage {
             statement.setString(3, uuid.toString());
             statement.executeUpdate();
         } catch (Exception e) {
-            WatchDogHelper.LOGGER.warn("[Aetherreach] Failed to update currency account name for {}", uuid, e);
+            WatchDogHelper.LOGGER.warn("[WatchDog Helper] Failed to update currency account name for {}", uuid, e);
         }
     }
 

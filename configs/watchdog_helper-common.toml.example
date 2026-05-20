@@ -1,0 +1,104 @@
+# Currency display name.
+currencyName = ""
+
+# Fallback passive reward.
+defaultCurrencyPerTenMinutes = 0
+
+# Passive reward balance cap.
+passiveRewardBalanceCap = 0
+
+# Default /currency top limit.
+currencyTopDefaultLimit = 10
+
+# Shop rotation hours.
+shopRotationHours = 12
+
+# Server display name.
+serverName = ""
+
+# Helper display name.
+helperName = ""
+
+# Lore display name.
+veilName = ""
+
+# Helper message prefix.
+veilPrefix = ""
+
+# Server broadcast prefix.
+serverPrefix = ""
+
+# Discord chat prefix.
+discordPrefix = ""
+
+# MOTD title.
+motdTitle = ""
+
+# Rules title.
+rulesTitle = ""
+
+# Shop display name.
+shopName = ""
+
+# Exchange display name.
+exchangeName = ""
+
+# Discord invite URL.
+discordInviteUrl = ""
+
+# Enable join messages.
+welcomeEnabled = false
+
+# Broadcast join messages.
+welcomeBroadcastToAll = false
+
+# Enable join MOTD.
+motdEnabled = false
+
+# MOTD message.
+motdMessage = ""
+
+# Show rules on join.
+rulesOnJoinEnabled = false
+
+# Rules message.
+rulesMessage = ""
+
+# First join message.
+firstJoinWelcomeMessage = ""
+
+# Returning join message.
+returningWelcomeMessage = ""
+
+# Enable leave messages.
+leaveMessagesEnabled = false
+
+# Broadcast leave messages.
+leaveBroadcastToAll = false
+
+# Leave message.
+playerLeaveMessage = ""
+
+# Enable HTTP bridge.
+bridgeEnabled = false
+
+# HTTP bridge host.
+bridgeHost = ""
+
+# HTTP bridge port.
+bridgePort = 25590
+
+# HTTP bridge token.
+bridgeToken = ""
+
+# Enable WatchDog callback.
+watchdogCallbackEnabled = false
+
+# WatchDog callback URL.
+watchdogCallbackUrl = ""
+
+# Restricted block ID.
+chunkDestroyerBlockId = ""
+
+# Allowed dimension ID.
+miningDimensionId = ""

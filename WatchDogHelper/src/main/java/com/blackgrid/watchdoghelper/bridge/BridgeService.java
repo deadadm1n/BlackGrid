@@ -31,7 +31,7 @@ public final class BridgeService {
         minecraftServer = server;
 
         if (!Config.BRIDGE_ENABLED.get()) {
-            WatchDogHelper.LOGGER.info("[AetherReach Bridge] Bridge disabled in config.");
+            WatchDogHelper.LOGGER.info("[WatchDog Helper Bridge] Bridge disabled in config.");
             return;
         }
 
@@ -51,9 +51,9 @@ public final class BridgeService {
             httpServer.setExecutor(Executors.newFixedThreadPool(2));
             httpServer.start();
 
-            WatchDogHelper.LOGGER.info("[AetherReach Bridge] Listening on http://{}:{}", host, port);
+            WatchDogHelper.LOGGER.info("[WatchDog Helper Bridge] Listening on http://{}:{}", host, port);
         } catch (IOException e) {
-            WatchDogHelper.LOGGER.error("[AetherReach Bridge] Failed to start bridge server", e);
+            WatchDogHelper.LOGGER.error("[WatchDog Helper Bridge] Failed to start bridge server", e);
         }
     }
 
@@ -61,7 +61,7 @@ public final class BridgeService {
         if (httpServer != null) {
             httpServer.stop(1);
             httpServer = null;
-            WatchDogHelper.LOGGER.info("[AetherReach Bridge] Bridge stopped.");
+            WatchDogHelper.LOGGER.info("[WatchDog Helper Bridge] Bridge stopped.");
         }
 
         minecraftServer = null;
@@ -199,7 +199,7 @@ public final class BridgeService {
         try {
             return JsonParser.parseString(raw).getAsJsonObject();
         } catch (Exception e) {
-            WatchDogHelper.LOGGER.warn("[AetherReach Bridge] Invalid JSON request body: {}", e.getMessage());
+            WatchDogHelper.LOGGER.warn("[WatchDog Helper Bridge] Invalid JSON request body: {}", e.getMessage());
             return null;
         }
     }
@@ -207,7 +207,7 @@ public final class BridgeService {
     private static boolean isAuthorized(JsonObject body) {
         String configuredToken = Config.BRIDGE_TOKEN.get();
         if (configuredToken == null || configuredToken.isBlank() || "change-me".equals(configuredToken)) {
-            WatchDogHelper.LOGGER.warn("[AetherReach Bridge] bridgeToken is not configured securely.");
+            WatchDogHelper.LOGGER.warn("[WatchDog Helper Bridge] bridgeToken is not configured securely.");
             return false;
         }
 

@@ -119,7 +119,7 @@ public class JsonCurrencyStorage implements CurrencyStorage {
                 }
             }
         } catch (Exception e) {
-            WatchDogHelper.LOGGER.error("[Aetherreach] Failed to load currency storage '{}'. Backing up and starting empty.", file, e);
+            WatchDogHelper.LOGGER.error("[WatchDog Helper] Failed to load currency storage '{}'. Backing up and starting empty.", file, e);
             backupCorruptFile();
             accounts.clear();
             save();
@@ -142,10 +142,10 @@ public class JsonCurrencyStorage implements CurrencyStorage {
                 Path tmpFile = file.resolveSibling(file.getFileName() + ".tmp");
                 Files.move(tmpFile, file, StandardCopyOption.REPLACE_EXISTING);
             } catch (Exception e) {
-                WatchDogHelper.LOGGER.error("[Aetherreach] Failed to save currency storage '{}'.", file, e);
+                WatchDogHelper.LOGGER.error("[WatchDog Helper] Failed to save currency storage '{}'.", file, e);
             }
         } catch (Exception e) {
-            WatchDogHelper.LOGGER.error("[Aetherreach] Failed to save currency storage '{}'.", file, e);
+            WatchDogHelper.LOGGER.error("[WatchDog Helper] Failed to save currency storage '{}'.", file, e);
         }
     }
 
@@ -156,7 +156,7 @@ public class JsonCurrencyStorage implements CurrencyStorage {
                 Files.copy(file, backup, StandardCopyOption.REPLACE_EXISTING);
             }
         } catch (Exception e) {
-            WatchDogHelper.LOGGER.error("[Aetherreach] Failed to back up corrupt currency storage '{}'.", file, e);
+            WatchDogHelper.LOGGER.error("[WatchDog Helper] Failed to back up corrupt currency storage '{}'.", file, e);
         }
     }
 }

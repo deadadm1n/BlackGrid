@@ -5,11 +5,13 @@ BlackGrid Gaming Community
 This repository contains two related projects:
 
 - `WatchDog/` - the Python wrapper, web panel, automation plugins, and Ubuntu start script.
-- `WatchDogHelper/` - the NeoForge Java helper mod installed into the AetherReach ATM11 server. It provides the Minecraft-side bridge, economy, commands, MOTD/rules, and placement protections.
+- `WatchDogHelper/` - the NeoForge Java helper mod installed into the Minecraft server. It provides the Minecraft-side bridge, economy, commands, MOTD/rules, and placement protections.
 
 Runtime files are intentionally not tracked. The live ATM11 server folder, logs, backups, virtual environments, generated jars, and `.env` secrets stay local.
 
 For a fresh WatchDog install, copy `WatchDog/.env.example` to `WatchDog/.env` and fill in the local tokens.
+
+Clean public config templates also live in `configs/`.
 
 ## Releasing WatchDog Helper
 
@@ -90,4 +92,4 @@ SSH automation for the Ubuntu host lives in `scripts/remote-watchdog.bat`:
 .\scripts\remote-watchdog.bat -Action stop
 ```
 
-`bootstrap -MigrateExisting` preserves live runtime paths such as `atm11`, `.env`, logs, state, backups, downloads, tmp, and updates, then points `/home/deadadm1n/WatchDog` at the Git checkout.
+`bootstrap -MigrateExisting` preserves live runtime paths such as `atm11`, `.env`, logs, state, backups, downloads, tmp, and updates, then points the remote `WatchDog` path at the Git checkout.

@@ -44,7 +44,7 @@ public final class WatchdogEventClient {
         }
 
         if (token == null || token.isBlank() || "change-me".equals(token)) {
-            WatchDogHelper.LOGGER.warn("[AetherReach] Watchdog callback skipped because bridgeToken is not configured.");
+            WatchDogHelper.LOGGER.warn("[WatchDog Helper] Watchdog callback skipped because bridgeToken is not configured.");
             return;
         }
 
@@ -61,7 +61,7 @@ public final class WatchdogEventClient {
 
         CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .exceptionally(error -> {
-                    WatchDogHelper.LOGGER.warn("[AetherReach] Failed to send chat event to Watchdog: {}", error.getMessage());
+                    WatchDogHelper.LOGGER.warn("[WatchDog Helper] Failed to send chat event to Watchdog: {}", error.getMessage());
                     return null;
                 });
     }

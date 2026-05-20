@@ -148,7 +148,7 @@ class WrapperApp:
             status = await ctx.aetherreach.status()
             return CommandResult(
                 ok=status is not None,
-                message="AetherReach bridge status" if status else "AetherReach bridge is unavailable",
+                message="Helper bridge status" if status else "Helper bridge is unavailable",
                 data={"aetherreach": status},
             )
 
@@ -181,18 +181,18 @@ class WrapperApp:
         async def cmd_server_restart(args):
             result = await restart_server_controller()
             if result.ok:
-                result.message = "ATM11 server restarted"
+                result.message = "Minecraft server restarted"
             return result
 
         async def cmd_server_kill(args):
             server, _process, process_alive, _startup_validated = current_server_state()
             if not server or not process_alive:
                 ctx.server_stop_requested = True
-                return CommandResult(message="ATM11 server is already stopped")
+                return CommandResult(message="Minecraft server is already stopped")
 
             ctx.server_stop_requested = True
             await server.kill()
-            return CommandResult(message="ATM11 server process killed; wrapper is still running")
+            return CommandResult(message="Minecraft server process killed; wrapper is still running")
 
         async def cmd_server_command(args):
             command = " ".join(args).strip()
@@ -201,10 +201,10 @@ class WrapperApp:
 
             _server, _process, process_alive, _startup_validated = current_server_state()
             if not process_alive:
-                return CommandResult(ok=False, message="ATM11 server is not running")
+                return CommandResult(ok=False, message="Minecraft server is not running")
 
             await ctx.server_process.send_command(command)
-            return CommandResult(message=f"Sent ATM11 command: {command}")
+            return CommandResult(message=f"Sent Minecraft command: {command}")
 
         async def cmd_reload(args):
             ctx.shutdown_requested = True
@@ -220,19 +220,19 @@ class WrapperApp:
         registry.register("reload-plugin", cmd_plugin_reload, "Compatibility alias for plugin reload", usage="wrapper reload-plugin <name>")
         registry.register("plugins reload", cmd_plugins_reload, "Reload all enabled plugins", usage="wrapper plugins reload")
         registry.register("reload-plugins", cmd_plugins_reload, "Compatibility alias for plugins reload", usage="wrapper reload-plugins")
-        registry.register("bridge status", cmd_bridge_status, "Show AetherReach bridge status", usage="wrapper bridge status")
-        registry.register("bridge veil", cmd_bridge_veil, "Send a Veil message in-game", usage="wrapper bridge veil <message>")
-        registry.register("bridge broadcast", cmd_bridge_broadcast, "Broadcast an AetherReach message in-game", usage="wrapper bridge broadcast <message>")
-        registry.register("server status", cmd_server_status, "Show ATM11 server status", usage="wrapper server status")
-        registry.register("server start", cmd_server_start, "Start ATM11 while keeping Watchdog alive", usage="wrapper server start")
-        registry.register("server stop", cmd_server_stop, "Gracefully stop ATM11 while keeping Watchdog alive", usage="wrapper server stop")
-        registry.register("server restart", cmd_server_restart, "Gracefully restart ATM11 while keeping Watchdog alive", usage="wrapper server restart")
-        registry.register("server kill", cmd_server_kill, "Force-kill ATM11 while keeping Watchdog alive", usage="wrapper server kill")
-        registry.register("server command", cmd_server_command, "Send a Minecraft command to ATM11", usage="wrapper server command <minecraft command>")
+        registry.register("bridge status", cmd_bridge_status, "Show helper bridge status", usage="wrapper bridge status")
+        registry.register("bridge veil", cmd_bridge_veil, "Send a helper message in-game", usage="wrapper bridge veil <message>")
+        registry.register("bridge broadcast", cmd_bridge_broadcast, "Broadcast a message in-game", usage="wrapper bridge broadcast <message>")
+        registry.register("server status", cmd_server_status, "Show Minecraft server status", usage="wrapper server status")
+        registry.register("server start", cmd_server_start, "Start Minecraft while keeping Watchdog alive", usage="wrapper server start")
+        registry.register("server stop", cmd_server_stop, "Gracefully stop Minecraft while keeping Watchdog alive", usage="wrapper server stop")
+        registry.register("server restart", cmd_server_restart, "Gracefully restart Minecraft while keeping Watchdog alive", usage="wrapper server restart")
+        registry.register("server kill", cmd_server_kill, "Force-kill Minecraft while keeping Watchdog alive", usage="wrapper server kill")
+        registry.register("server command", cmd_server_command, "Send a Minecraft command", usage="wrapper server command <minecraft command>")
         registry.register("restart", cmd_server_restart, "Compatibility alias for server restart", usage="wrapper restart")
-        registry.register("stop", cmd_stop, "Stop ATM11 and shut down Watchdog", usage="wrapper stop")
-        registry.register("shutdown", cmd_stop, "Stop ATM11 and shut down Watchdog", usage="wrapper shutdown")
-        registry.register("quit", cmd_stop, "Stop ATM11 and shut down Watchdog", usage="wrapper quit")
+        registry.register("stop", cmd_stop, "Stop Minecraft and shut down Watchdog", usage="wrapper stop")
+        registry.register("shutdown", cmd_stop, "Stop Minecraft and shut down Watchdog", usage="wrapper shutdown")
+        registry.register("quit", cmd_stop, "Stop Minecraft and shut down Watchdog", usage="wrapper quit")
         registry.register("exit", cmd_stop, "Stop ATM11 and shut down Watchdog", usage="wrapper exit")
         registry.register("reload", cmd_reload, "Restart the full wrapper process", usage="wrapper reload")
 

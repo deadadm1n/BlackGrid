@@ -7,18 +7,18 @@ from requests import exceptions as request_exceptions
 
 
 class AetherReachClient:
-    """Small async wrapper around the local Aether Reach HTTP bridge."""
+    """Small async wrapper around the local WatchDog Helper HTTP bridge."""
 
     def __init__(self, config, logger):
         self.config = config
         self.logger = logger
-        self.enabled = bool(config.get("bridges.aetherreach.enabled", config.get("aetherreach_bridge.enabled", True)))
-        self.base_url = str(config.get("bridges.aetherreach.url", config.get("aetherreach_bridge.url", "http://127.0.0.1:25590"))).rstrip("/")
-        self.token = str(config.get("bridges.aetherreach.token", config.get("aetherreach_bridge.token", "change-me")))
+        self.enabled = bool(config.get("bridges.aetherreach.enabled", config.get("aetherreach_bridge.enabled", False)))
+        self.base_url = str(config.get("bridges.aetherreach.url", config.get("aetherreach_bridge.url", ""))).rstrip("/")
+        self.token = str(config.get("bridges.aetherreach.token", config.get("aetherreach_bridge.token", "")))
         self.timeout = float(config.get("bridges.aetherreach.timeout_seconds", config.get("aetherreach_bridge.timeout_seconds", 3)))
 
     def ready(self) -> bool:
-        return self.enabled and bool(self.token) and self.token != "change-me"
+        return self.enabled and bool(self.base_url) and bool(self.token) and self.token != "change-me"
 
     async def veil(self, message: str) -> bool:
         return await self._post("/api/veil", {"message": message})
@@ -45,12 +45,12 @@ class AetherReachClient:
         try:
             return await asyncio.to_thread(request_status)
         except Exception as exc:
-            self.logger.debug("[AetherReachBridge] Status request failed: %s", exc)
+            self.logger.debug("[HelperBridge] Status request failed: %s", exc)
             return None
 
     async def _post(self, path: str, payload: Dict[str, Any]) -> bool:
         if not self.ready():
-            self.logger.debug("[AetherReachBridge] Bridge disabled or token not configured")
+            self.logger.debug("[HelperBridge] Bridge disabled or token not configured")
             return False
 
         body = dict(payload)
@@ -74,12 +74,12 @@ class AetherReachClient:
             request_exceptions.ReadTimeout,
             RemoteDisconnected,
         ) as exc:
-            self.logger.debug("[AetherReachBridge] POST %s skipped; bridge offline: %s", path, exc)
+            self.logger.debug("[HelperBridge] POST %s skipped; bridge offline: %s", path, exc)
             return False
         except request_exceptions.HTTPError as exc:
             status = exc.response.status_code if exc.response is not None else "unknown"
-            self.logger.warning("[AetherReachBridge] POST %s rejected with HTTP %s", path, status)
+            self.logger.warning("[HelperBridge] POST %s rejected with HTTP %s", path, status)
             return False
         except Exception as exc:
-            self.logger.warning("[AetherReachBridge] POST %s failed: %s", path, exc)
+            self.logger.warning("[HelperBridge] POST %s failed: %s", path, exc)
             return False

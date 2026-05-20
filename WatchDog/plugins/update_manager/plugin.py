@@ -207,7 +207,12 @@ class Plugin(WrapperPlugin):
         shutil.copy2(source, install_dir / final_name)
 
     def fetch_latest_release(self, target_name, target):
-        repo = self.settings.get("repository", "deadadm1n/BlackGrid")
+        repo = str(self.settings.get("repository", "")).strip()
+        if not repo:
+            if self.ctx:
+                self.ctx.logger.debug("[UpdateManager] No GitHub repository configured")
+            return None
+
         releases = self.github_json(f"https://api.github.com/repos/{repo}/releases")
         tag_prefix = target["tag_prefix"]
         asset_pattern = target["asset_pattern"]

@@ -386,7 +386,7 @@ class WebPanel:
         if not bridge:
             return web.json_response({
                 "ok": False,
-                "error": "AetherReach bridge not available",
+                "error": "Helper bridge not available",
             }, status=500)
 
         await bridge.veil(message)

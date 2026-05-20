@@ -97,7 +97,7 @@ public final class ShopService {
             }
             return reroll(server);
         } catch (Exception e) {
-            WatchDogHelper.LOGGER.error("[Aetherreach] Failed to load Veil Imports rotation.", e);
+            WatchDogHelper.LOGGER.error("[WatchDog Helper] Failed to load configured shop rotation.", e);
             return List.of();
         }
     }
@@ -144,7 +144,7 @@ public final class ShopService {
 
             return loadActiveRotation();
         } catch (Exception e) {
-            WatchDogHelper.LOGGER.error("[Aetherreach] Failed to reroll Veil Imports.", e);
+            WatchDogHelper.LOGGER.error("[WatchDog Helper] Failed to reroll configured shop.", e);
             return List.of();
         }
     }
@@ -154,7 +154,7 @@ public final class ShopService {
         ShopListing listing = getCurrentRotation(server).stream()
                 .filter(item -> item.slot() == slot)
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("No Veil Imports stock exists in slot " + slot + "."));
+                .orElseThrow(() -> new IllegalArgumentException("No configured shop stock exists in slot " + slot + "."));
 
         if (!CurrencyService.deductBalance(player, listing.price(), "SHOP_BUY", "slot:" + listing.slot() + ":" + listing.itemId())) {
             throw new IllegalArgumentException("You do not have enough " + CurrencyService.currencyName() + ".");
@@ -165,7 +165,7 @@ public final class ShopService {
             return listing;
         } catch (Exception e) {
             CurrencyService.addBalance(player, listing.price(), "SHOP_BUY_REFUND", "slot:" + listing.slot() + ":" + listing.itemId());
-            WatchDogHelper.LOGGER.error("[Aetherreach] Failed to complete Veil Imports purchase.", e);
+            WatchDogHelper.LOGGER.error("[WatchDog Helper] Failed to complete configured shop purchase.", e);
             throw new RuntimeException("Import failed; Shards refunded.", e);
         }
     }

@@ -11,7 +11,7 @@ from wrapper.core.events import (
 
 
 # Chat is now handled through:
-# Minecraft -> Aether Reach -> HTTP -> Watchdog -> Discord
+# Minecraft -> WatchDog Helper -> HTTP -> Watchdog -> Discord
 # So console regex chat relay should stay disabled.
 CHAT_RELAY_FROM_LOGS = False
 

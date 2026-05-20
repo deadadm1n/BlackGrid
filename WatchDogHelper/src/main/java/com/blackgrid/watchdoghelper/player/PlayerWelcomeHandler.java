@@ -160,7 +160,7 @@ public class PlayerWelcomeHandler {
             }
 
         } catch (IOException e) {
-            WatchDogHelper.LOGGER.warn("[AetherReach] Failed to load seen players: {}", e.getMessage());
+            WatchDogHelper.LOGGER.warn("[WatchDog Helper] Failed to load seen players: {}", e.getMessage());
         }
     }
 
@@ -189,7 +189,7 @@ public class PlayerWelcomeHandler {
             Files.writeString(SEEN_PLAYERS_FILE, builder.toString());
 
         } catch (IOException e) {
-            WatchDogHelper.LOGGER.warn("[AetherReach] Failed to save seen players: {}", e.getMessage());
+            WatchDogHelper.LOGGER.warn("[WatchDog Helper] Failed to save seen players: {}", e.getMessage());
         }
     }
     private static String pickRandomMessage(String raw) {
