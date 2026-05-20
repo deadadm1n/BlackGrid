@@ -29,6 +29,7 @@ class WrapperPlugin:
         self.ctx = None
         self.task = None
         self.running = False
+        self.applying = False
 
     async def register_events(self, ctx):
         self.ctx = ctx
@@ -60,11 +61,25 @@ class WrapperPlugin:
             usage="wrapper atm11 update status",
         )
         registry.register(
+            "minecraft update status",
+            self.cmd_status,
+            "Show Minecraft pack update status",
+            owner=self.name,
+            usage="wrapper minecraft update status",
+        )
+        registry.register(
             "atm11 update check",
             self.cmd_check,
             "Check CurseForge for a new ATM11 ServerFiles update",
             owner=self.name,
             usage="wrapper atm11 update check",
+        )
+        registry.register(
+            "minecraft update check",
+            self.cmd_check,
+            "Check CurseForge for a new Minecraft pack update",
+            owner=self.name,
+            usage="wrapper minecraft update check",
         )
         registry.register(
             "atm11 update download",
@@ -74,6 +89,13 @@ class WrapperPlugin:
             usage="wrapper atm11 update download",
         )
         registry.register(
+            "minecraft update download",
+            self.cmd_download,
+            "Download the available Minecraft pack update without installing it",
+            owner=self.name,
+            usage="wrapper minecraft update download",
+        )
+        registry.register(
             "atm11 update apply",
             self.cmd_apply,
             "Stop ATM11, install the downloaded update, validate startup, and rollback on failure",
@@ -81,11 +103,25 @@ class WrapperPlugin:
             usage="wrapper atm11 update apply",
         )
         registry.register(
+            "minecraft update apply",
+            self.cmd_apply,
+            "Stop Minecraft, install the downloaded pack update, validate startup, and rollback on failure",
+            owner=self.name,
+            usage="wrapper minecraft update apply",
+        )
+        registry.register(
             "atm11 update clear",
             self.cmd_clear,
             "Clear available/pending ATM11 update state",
             owner=self.name,
             usage="wrapper atm11 update clear",
+        )
+        registry.register(
+            "minecraft update clear",
+            self.cmd_clear,
+            "Clear available/pending Minecraft update state",
+            owner=self.name,
+            usage="wrapper minecraft update clear",
         )
 
     async def on_wrapper_stop(self, ctx):
@@ -112,7 +148,10 @@ class WrapperPlugin:
 
         while self.running:
             try:
-                await self.check_for_update()
+                if self.applying:
+                    self.ctx.logger.info("[ATM11Update] Check skipped while manual apply is running")
+                else:
+                    await self.check_for_update()
             except UpdateCheckUnavailable as e:
                 self.ctx.logger.warning("[ATM11Update] Check skipped: %s", e)
             except Exception:
@@ -555,60 +594,88 @@ class WrapperPlugin:
         if pending.get("status") == "installed_waiting_for_boot_validation":
             return CommandResult(ok=False, message="An update is already installed and waiting for boot validation.")
 
+        if pending.get("status") == "installing":
+            return CommandResult(
+                ok=False,
+                message=(
+                    "A previous update apply was interrupted while installing. "
+                    "Inspect pending.json and the backup before retrying, or run wrapper atm11 update clear."
+                ),
+                data={"pending": pending},
+            )
+
         server = getattr(self.ctx, "server_process", None)
         process = getattr(server, "process", None) if server else None
         was_running = bool(process and process.returncode is None)
 
+        self.applying = True
         self.ctx.logger.warning("[ATM11Update] Manual update apply started: %s", pending.get("display_name"))
+        self.ctx.logger.warning("[ATM11Update] This can take several minutes while the server is backed up and validated.")
         await self.notify_discord(f"[ATM11Update] Manual apply started: {pending.get('display_name')}")
 
-        if was_running:
-            self.ctx.server_stop_requested = True
-            await server.stop()
-            self.ctx.server_stop_requested = False
+        try:
+            if was_running:
+                self.ctx.server_stop_requested = True
+                await server.stop()
+                self.ctx.server_stop_requested = False
 
-        await self.install_pending_update(pending)
+            await self.install_pending_update(pending)
 
-        new_server = ServerProcess(self.ctx)
-        started = await new_server.start()
+            new_server = ServerProcess(self.ctx)
+            started = await new_server.start()
 
-        if started:
-            await self.after_scheduled_restart_success(self.ctx)
+            if started:
+                await self.after_scheduled_restart_success(self.ctx)
 
-            if getattr(self.ctx, "plugin_loader", None):
-                await self.ctx.plugin_loader.run_hook("after_server_start")
+                if getattr(self.ctx, "plugin_loader", None):
+                    await self.ctx.plugin_loader.run_hook("after_server_start")
 
-            self.ctx.server_output_task = asyncio.create_task(self.ctx.server_process.read_output_forever())
-            await self.notify_discord(f"[ATM11Update] Update applied successfully: {pending.get('display_name')}")
+                self.ctx.server_output_task = asyncio.create_task(self.ctx.server_process.read_output_forever())
+                await self.notify_discord(f"[ATM11Update] Update applied successfully: {pending.get('display_name')}")
 
-            return CommandResult(
-                message=f"Update applied and startup validated: {pending.get('display_name')}",
-                data={"file_id": pending.get("file_id")},
+                return CommandResult(
+                    message=f"Update applied and startup validated: {pending.get('display_name')}",
+                    data={"file_id": pending.get("file_id")},
+                )
+
+            await self.after_scheduled_restart_failed(self.ctx)
+
+            rollback_server = ServerProcess(self.ctx)
+            rollback_started = await rollback_server.start()
+
+            if rollback_started:
+                if getattr(self.ctx, "plugin_loader", None):
+                    await self.ctx.plugin_loader.run_hook("after_server_start")
+
+                self.ctx.server_output_task = asyncio.create_task(self.ctx.server_process.read_output_forever())
+
+            await self.notify_discord(
+                f"[ATM11Update] Update failed startup validation and rollback was attempted: {pending.get('display_name')}"
             )
 
-        await self.after_scheduled_restart_failed(self.ctx)
-
-        rollback_server = ServerProcess(self.ctx)
-        rollback_started = await rollback_server.start()
-
-        if rollback_started:
-            if getattr(self.ctx, "plugin_loader", None):
-                await self.ctx.plugin_loader.run_hook("after_server_start")
-
-            self.ctx.server_output_task = asyncio.create_task(self.ctx.server_process.read_output_forever())
-
-        await self.notify_discord(
-            f"[ATM11Update] Update failed startup validation and rollback was attempted: {pending.get('display_name')}"
-        )
-
-        return CommandResult(
-            ok=False,
-            message=(
-                "Update failed startup validation; rollback "
-                + ("started successfully." if rollback_started else "also failed to start.")
-            ),
-            data={"file_id": pending.get("file_id"), "rollback_started": rollback_started},
-        )
+            return CommandResult(
+                ok=False,
+                message=(
+                    "Update failed startup validation; rollback "
+                    + ("started successfully." if rollback_started else "also failed to start.")
+                ),
+                data={"file_id": pending.get("file_id"), "rollback_started": rollback_started},
+            )
+        except Exception as e:
+            self.ctx.logger.exception("[ATM11Update] Manual update apply failed")
+            pending["status"] = "apply_failed"
+            pending["error"] = str(e)
+            pending["failed_at"] = datetime.now(timezone.utc).isoformat()
+            self.save_pending(pending)
+            await self.notify_discord(f"[ATM11Update] Manual apply failed: {e}")
+            return CommandResult(
+                ok=False,
+                message=f"Update apply failed: {e}",
+                data={"file_id": pending.get("file_id"), "pending_status": pending.get("status")},
+            )
+        finally:
+            self.ctx.server_stop_requested = False
+            self.applying = False
 
     async def cmd_clear(self, args):
         self.clear_available()
@@ -696,30 +763,37 @@ class WrapperPlugin:
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
         backup_path = self.backup_dir() / f"atm11-before-{file_id}-{timestamp}"
 
-        self.ctx.logger.warning("[ATM11Update] Backing up entire server folder: %s", backup_path)
+        try:
+            self.ctx.logger.warning("[ATM11Update] Backing up entire server folder: %s", backup_path)
 
-        await asyncio.to_thread(
-            self.backup_entire_server,
-            server_dir,
-            backup_path,
-        )
+            await asyncio.to_thread(
+                self.backup_entire_server,
+                server_dir,
+                backup_path,
+            )
 
-        pending["backup_path"] = str(backup_path)
-        pending["status"] = "installing"
-        pending["install_started_at"] = datetime.now(timezone.utc).isoformat()
-        self.save_pending(pending)
+            pending["backup_path"] = str(backup_path)
+            pending["status"] = "installing"
+            pending["install_started_at"] = datetime.now(timezone.utc).isoformat()
+            self.save_pending(pending)
 
-        self.ctx.logger.warning("[ATM11Update] Installing prepared ATM11 update")
+            self.ctx.logger.warning("[ATM11Update] Installing prepared ATM11 update")
 
-        await asyncio.to_thread(
-            self.install_update_files,
-            pack_root,
-            server_dir,
-        )
+            await asyncio.to_thread(
+                self.install_update_files,
+                pack_root,
+                server_dir,
+            )
 
-        pending["status"] = "installed_waiting_for_boot_validation"
-        pending["install_finished_at"] = datetime.now(timezone.utc).isoformat()
-        self.save_pending(pending)
+            pending["status"] = "installed_waiting_for_boot_validation"
+            pending["install_finished_at"] = datetime.now(timezone.utc).isoformat()
+            self.save_pending(pending)
+        except Exception as e:
+            pending["status"] = "install_failed"
+            pending["error"] = str(e)
+            pending["failed_at"] = datetime.now(timezone.utc).isoformat()
+            self.save_pending(pending)
+            raise
 
         self.ctx.logger.warning("[ATM11Update] Update installed. Awaiting startup validation.")
 

@@ -233,7 +233,7 @@ class WrapperApp:
         registry.register("stop", cmd_stop, "Stop Minecraft and shut down Watchdog", usage="wrapper stop")
         registry.register("shutdown", cmd_stop, "Stop Minecraft and shut down Watchdog", usage="wrapper shutdown")
         registry.register("quit", cmd_stop, "Stop Minecraft and shut down Watchdog", usage="wrapper quit")
-        registry.register("exit", cmd_stop, "Stop ATM11 and shut down Watchdog", usage="wrapper exit")
+        registry.register("exit", cmd_stop, "Stop Minecraft and shut down Watchdog", usage="wrapper exit")
         registry.register("reload", cmd_reload, "Restart the full wrapper process", usage="wrapper reload")
 
     async def console_loop(self, ctx, plugins: PluginLoader):
@@ -258,7 +258,15 @@ class WrapperApp:
             lowered = command.lower()
 
             if lowered.startswith("wrapper"):
-                result = await ctx.command_registry.execute(command)
+                try:
+                    result = await ctx.command_registry.execute(command)
+                except Exception as exc:
+                    logger.exception("Wrapper command failed: %s", command)
+                    result = CommandResult(
+                        ok=False,
+                        message=f"Wrapper command failed: {exc}",
+                    )
+
                 level = logger.info if result.ok else logger.warning
                 level(
                     "%s%s",
