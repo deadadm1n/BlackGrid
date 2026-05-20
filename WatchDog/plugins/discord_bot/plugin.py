@@ -374,20 +374,20 @@ class Plugin(WrapperPlugin):
     async def handle_link_command(self, message, code):
         code = code.strip().upper()
         if not code:
-            await message.channel.send("Run `/discordlink` in-game and click the link it gives you.")
+            await message.channel.send("Run `/discord` in-game and click the link it gives you.")
             return
 
         pending = self.load_rank_state("pending_links")
         link = pending.get(code)
         if not link:
-            await message.channel.send("That link token was not found. Run `/discordlink` in-game for a fresh link.")
+            await message.channel.send("That link token was not found. Run `/discord` in-game for a fresh link.")
             return
 
         expires_at = float(link.get("expires_at", 0))
         if expires_at and time.time() > expires_at:
             pending.pop(code, None)
             self.save_rank_state("pending_links", pending)
-            await message.channel.send("That link expired. Run `/discordlink` in-game again.")
+            await message.channel.send("That link expired. Run `/discord` in-game again.")
             return
 
         links = self.load_rank_state("linked_accounts")
@@ -469,7 +469,7 @@ class Plugin(WrapperPlugin):
         if expires_at and time.time() > expires_at:
             pending.pop(state, None)
             self.save_rank_state("pending_links", pending)
-            return web.Response(text="That Minecraft Discord link expired. Run /discordlink again.", status=410)
+            return web.Response(text="That Minecraft Discord link expired. Run /discord again.", status=410)
 
         if not self.oauth_enabled():
             return web.Response(text="Discord OAuth linking is not configured yet.", status=503)
@@ -496,13 +496,13 @@ class Plugin(WrapperPlugin):
         link = pending.get(state)
 
         if not link:
-            return web.Response(text="That Minecraft Discord link was not found. Run /discordlink again.", status=404)
+            return web.Response(text="That Minecraft Discord link was not found. Run /discord again.", status=404)
 
         expires_at = float(link.get("expires_at", 0))
         if expires_at and time.time() > expires_at:
             pending.pop(state, None)
             self.save_rank_state("pending_links", pending)
-            return web.Response(text="That Minecraft Discord link expired. Run /discordlink again.", status=410)
+            return web.Response(text="That Minecraft Discord link expired. Run /discord again.", status=410)
 
         try:
             token_data = await self.exchange_oauth_code(oauth_code)

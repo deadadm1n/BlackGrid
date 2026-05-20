@@ -9,6 +9,7 @@ import com.blackgrid.watchdoghelper.currency.CurrencyService;
 import com.blackgrid.watchdoghelper.shop.ShopListing;
 import com.blackgrid.watchdoghelper.shop.ShopService;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.LongArgumentType;
 import net.minecraft.ChatFormatting;
@@ -49,47 +50,12 @@ public class WatchDogHelperCommands {
     private void registerDiscordLink(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
                 Commands.literal("discordlink")
-                        .executes(ctx -> {
-                            ServerPlayer player = ctx.getSource().getPlayerOrException();
-                            String code = generateLinkCode();
-                            WatchdogEventClient.sendDiscordLinkEvent(
-                                    player.getUUID().toString(),
-                                    player.getName().getString(),
-                                    code
-                            );
-                            String linkTemplate = Config.DISCORD_LINK_URL.get();
-
-                            if (linkTemplate != null && !linkTemplate.isBlank()) {
-                                String linkUrl = linkTemplate
-                                        .replace("{state}", code)
-                                        .replace("{code}", code);
-
-                                player.sendSystemMessage(
-                                        veilMsg("Link Discord: ")
-                                                .append(Component.literal("Click here")
-                                                        .withStyle(style -> style
-                                                                .withColor(ChatFormatting.AQUA)
-                                                                .withUnderlined(true)
-                                                                .withClickEvent(new ClickEvent.OpenUrl(URI.create(linkUrl)))))
-                                                .append(Component.literal(" to join and sync your role.")
-                                                        .withStyle(ChatFormatting.GRAY))
-                                );
-                            } else {
-                                player.sendSystemMessage(
-                                        veilMsg("Discord link code: ")
-                                                .append(Component.literal(code)
-                                                        .withStyle(ChatFormatting.GOLD))
-                                                .append(Component.literal("  Use !link " + code + " in Discord.")
-                                                        .withStyle(ChatFormatting.GRAY))
-                                );
-                            }
-                            return 1;
-                        })
+                        .executes(ctx -> sendDiscordLink(ctx.getSource()))
         );
 
         dispatcher.register(
                 Commands.literal("linkdiscord")
-                        .executes(ctx -> dispatcher.execute("discordlink", ctx.getSource()))
+                        .executes(ctx -> sendDiscordLink(ctx.getSource()))
         );
     }
 
@@ -103,7 +69,9 @@ public class WatchDogHelperCommands {
     private void registerDiscord(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
                 Commands.literal("discord")
-                        .executes(ctx -> {
+                        .executes(ctx -> sendDiscordLink(ctx.getSource()))
+                        .then(Commands.literal("invite")
+                                .executes(ctx -> {
                             ctx.getSource().sendSuccess(
                                     () -> veilPrefixComponent()
                                             .append(Component.literal("Join the Discord")
@@ -115,7 +83,7 @@ public class WatchDogHelperCommands {
                                     false
                             );
                             return 1;
-                        })
+                        }))
         );
     }
 
@@ -675,6 +643,44 @@ public class WatchDogHelperCommands {
                             .append(Component.literal(" - " + listing.sellerName())
                                     .withStyle(ChatFormatting.GRAY)),
                     false
+            );
+        }
+
+        return 1;
+    }
+
+    private static int sendDiscordLink(CommandSourceStack source) throws CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        String code = generateLinkCode();
+        WatchdogEventClient.sendDiscordLinkEvent(
+                player.getUUID().toString(),
+                player.getName().getString(),
+                code
+        );
+        String linkTemplate = Config.DISCORD_LINK_URL.get();
+
+        if (linkTemplate != null && !linkTemplate.isBlank()) {
+            String linkUrl = linkTemplate
+                    .replace("{state}", code)
+                    .replace("{code}", code);
+
+            player.sendSystemMessage(
+                    veilMsg("Link Discord: ")
+                            .append(Component.literal("Click here")
+                                    .withStyle(style -> style
+                                            .withColor(ChatFormatting.AQUA)
+                                            .withUnderlined(true)
+                                            .withClickEvent(new ClickEvent.OpenUrl(URI.create(linkUrl)))))
+                            .append(Component.literal(" to join and sync your role.")
+                                    .withStyle(ChatFormatting.GRAY))
+            );
+        } else {
+            player.sendSystemMessage(
+                    veilMsg("Discord link code: ")
+                            .append(Component.literal(code)
+                                    .withStyle(ChatFormatting.GOLD))
+                            .append(Component.literal("  Use !link " + code + " in Discord.")
+                                    .withStyle(ChatFormatting.GRAY))
             );
         }
 

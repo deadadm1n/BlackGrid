@@ -61,15 +61,11 @@ wrapper update apply
 
 Wrapper updates preserve local config, `.env`, logs, state, backups, downloads, `atm11`, and update staging folders. WatchDog Helper jar updates replace the helper jar in `atm11/mods` and back up the previous jar first.
 
-## Discord Ranks
+## Discord Linking
 
-WatchDog Helper exposes `/discordlink` in Minecraft. The player runs it in-game, then uses the generated code in Discord:
+WatchDog Helper exposes `/discord` in Minecraft. The player runs it in-game, then clicks the generated Discord OAuth link.
 
-```text
-!link ABC123
-```
-
-The Discord bot reads FTB Ranks from `atm11/world/serverconfig/ftbranks/ranks.json5`, creates matching Discord roles, and syncs linked players based on FTB rank data. Discord admins can run:
+The old `/discordlink` and `/linkdiscord` commands are kept as compatibility aliases. Discord admins can run:
 
 ```text
 !ranks setup
