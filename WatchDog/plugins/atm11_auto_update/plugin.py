@@ -1,4 +1,5 @@
 import asyncio
+import glob
 import json
 import re
 import shutil
@@ -879,7 +880,7 @@ class WrapperPlugin:
         preserved = []
 
         for pattern in patterns:
-            matches = list(server_dir.glob(pattern))
+            matches = self.find_preserved_matches(server_dir, pattern)
 
             for src in matches:
                 try:
@@ -902,6 +903,35 @@ class WrapperPlugin:
                 preserved.append((dst, relative, src.is_dir()))
 
         return preserved
+
+    def find_preserved_matches(self, server_dir, pattern):
+        pattern_text = str(pattern).strip()
+
+        if not pattern_text:
+            return []
+
+        server_dir = server_dir.resolve()
+        candidate_pattern = Path(pattern_text)
+
+        if candidate_pattern.is_absolute():
+            raw_matches = glob.glob(pattern_text)
+        else:
+            raw_matches = glob.glob(str(server_dir / pattern_text))
+
+        matches = []
+
+        for match in raw_matches:
+            src = Path(match).resolve()
+
+            try:
+                src.relative_to(server_dir)
+            except ValueError:
+                self.ctx.logger.warning("[ATM11Update] Skipping preserved path outside server dir: %s", src)
+                continue
+
+            matches.append(src)
+
+        return matches
 
     def restore_preserved_paths(self, server_dir, preserved):
         for src, relative, is_dir in preserved:
