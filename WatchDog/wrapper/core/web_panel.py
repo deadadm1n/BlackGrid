@@ -276,7 +276,7 @@ class WebPanel:
 
         return web.json_response({
             "ok": True,
-            "wrapper": "online",
+            "watchdog": "online",
             "server_running": server_running,
             "process_alive": process_alive,
             "startup_validated": startup_validated,
@@ -354,7 +354,9 @@ class WebPanel:
 
         result = None
 
-        if command.lower().startswith("wrapper"):
+        lowered = command.lower()
+
+        if lowered.startswith("watchdog") or lowered.startswith("wrapper"):
             result = await self.ctx.command_registry.execute(command)
             return web.json_response(result.to_dict(), status=200 if result.ok else 400)
 
@@ -424,7 +426,7 @@ class WebPanel:
     async def api_restart(self, request):
         await self.require_auth(request)
 
-        result = await self.ctx.command_registry.execute("wrapper restart")
+        result = await self.ctx.command_registry.execute("watchdog server restart")
         return web.json_response(result.to_dict(), status=200 if result.ok else 500)
 
     async def start(self):

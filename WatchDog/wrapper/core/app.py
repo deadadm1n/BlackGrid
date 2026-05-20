@@ -56,7 +56,7 @@ class WrapperApp:
 
             ctx.server_stop_requested = True
             await server.stop()
-            return CommandResult(message="ATM11 server stopped; wrapper is still running")
+            return CommandResult(message="ATM11 server stopped; watchdog is still running")
 
         async def restart_server_controller():
             server, _process, process_alive, _startup_validated = current_server_state()
@@ -69,7 +69,7 @@ class WrapperApp:
 
         async def cmd_help(args):
             return CommandResult(
-                message="Available wrapper commands",
+                message="Available watchdog commands",
                 data={"commands": registry.list_commands()},
             )
 
@@ -84,9 +84,9 @@ class WrapperApp:
                 if bridge_status is None:
                     bridge_status = {"ok": False, "bridge": "offline"}
             return CommandResult(
-                message="Wrapper status",
+                message="watchdog status",
                 data={
-                    "wrapper": "online",
+                    "watchdog": "online",
                     "server_running": process_alive,
                     "startup_validated": startup_validated,
                     "plugins": plugins.list_plugins(),
@@ -115,7 +115,7 @@ class WrapperApp:
 
         async def cmd_plugin_reload(args):
             if not args:
-                return CommandResult(ok=False, message="Usage: wrapper plugin reload <name>")
+                return CommandResult(ok=False, message="Usage: watchdog plugin reload <name>")
 
             plugin_name = args[0]
             plugin = await plugins.reload_plugin(plugin_name)
@@ -155,14 +155,14 @@ class WrapperApp:
         async def cmd_bridge_veil(args):
             message = " ".join(args).strip()
             if not message:
-                return CommandResult(ok=False, message="Usage: wrapper bridge veil <message>")
+                return CommandResult(ok=False, message="Usage: watchdog bridge veil <message>")
             delivered = await ctx.aetherreach.veil(message)
             return CommandResult(ok=delivered, message="Veil message sent" if delivered else "Veil message failed")
 
         async def cmd_bridge_broadcast(args):
             message = " ".join(args).strip()
             if not message:
-                return CommandResult(ok=False, message="Usage: wrapper bridge broadcast <message>")
+                return CommandResult(ok=False, message="Usage: watchdog bridge broadcast <message>")
             delivered = await ctx.aetherreach.broadcast(message)
             return CommandResult(ok=delivered, message="Broadcast sent" if delivered else "Broadcast failed")
 
@@ -170,7 +170,7 @@ class WrapperApp:
             ctx.shutdown_requested = True
             if ctx.server_process:
                 await ctx.server_process.stop()
-            return CommandResult(message="Wrapper shutdown requested")
+            return CommandResult(message="watchdog shutdown requested")
 
         async def cmd_server_start(args):
             return await start_server_controller()
@@ -192,12 +192,12 @@ class WrapperApp:
 
             ctx.server_stop_requested = True
             await server.kill()
-            return CommandResult(message="Minecraft server process killed; wrapper is still running")
+            return CommandResult(message="Minecraft server process killed; watchdog is still running")
 
         async def cmd_server_command(args):
             command = " ".join(args).strip()
             if not command:
-                return CommandResult(ok=False, message="Usage: wrapper server command <minecraft command>")
+                return CommandResult(ok=False, message="Usage: watchdog server command <minecraft command>")
 
             _server, _process, process_alive, _startup_validated = current_server_state()
             if not process_alive:
@@ -212,34 +212,34 @@ class WrapperApp:
                 await ctx.server_process.stop()
             os.execv(sys.executable, [sys.executable] + sys.argv)
 
-        registry.register("help", cmd_help, "List registered wrapper commands", usage="wrapper help")
-        registry.register("commands", cmd_help, "List registered wrapper commands", usage="wrapper commands")
-        registry.register("status", cmd_status, "Show wrapper, server, plugin, and bridge status", usage="wrapper status")
-        registry.register("plugins", cmd_plugins, "List loaded plugins", usage="wrapper plugins")
-        registry.register("plugin reload", cmd_plugin_reload, "Hot-load or reload one plugin", usage="wrapper plugin reload <name>")
-        registry.register("reload-plugin", cmd_plugin_reload, "Compatibility alias for plugin reload", usage="wrapper reload-plugin <name>")
-        registry.register("plugins reload", cmd_plugins_reload, "Reload all enabled plugins", usage="wrapper plugins reload")
-        registry.register("reload-plugins", cmd_plugins_reload, "Compatibility alias for plugins reload", usage="wrapper reload-plugins")
-        registry.register("bridge status", cmd_bridge_status, "Show helper bridge status", usage="wrapper bridge status")
-        registry.register("bridge veil", cmd_bridge_veil, "Send a helper message in-game", usage="wrapper bridge veil <message>")
-        registry.register("bridge broadcast", cmd_bridge_broadcast, "Broadcast a message in-game", usage="wrapper bridge broadcast <message>")
-        registry.register("server status", cmd_server_status, "Show Minecraft server status", usage="wrapper server status")
-        registry.register("server start", cmd_server_start, "Start Minecraft while keeping Watchdog alive", usage="wrapper server start")
-        registry.register("server stop", cmd_server_stop, "Gracefully stop Minecraft while keeping Watchdog alive", usage="wrapper server stop")
-        registry.register("server restart", cmd_server_restart, "Gracefully restart Minecraft while keeping Watchdog alive", usage="wrapper server restart")
-        registry.register("server kill", cmd_server_kill, "Force-kill Minecraft while keeping Watchdog alive", usage="wrapper server kill")
-        registry.register("server command", cmd_server_command, "Send a Minecraft command", usage="wrapper server command <minecraft command>")
-        registry.register("restart", cmd_server_restart, "Compatibility alias for server restart", usage="wrapper restart")
-        registry.register("stop", cmd_stop, "Stop Minecraft and shut down Watchdog", usage="wrapper stop")
-        registry.register("shutdown", cmd_stop, "Stop Minecraft and shut down Watchdog", usage="wrapper shutdown")
-        registry.register("quit", cmd_stop, "Stop Minecraft and shut down Watchdog", usage="wrapper quit")
-        registry.register("exit", cmd_stop, "Stop Minecraft and shut down Watchdog", usage="wrapper exit")
-        registry.register("reload", cmd_reload, "Restart the full wrapper process", usage="wrapper reload")
+        registry.register("help", cmd_help, "List registered watchdog commands", usage="watchdog help")
+        registry.register("commands", cmd_help, "List registered watchdog commands", usage="watchdog commands")
+        registry.register("status", cmd_status, "Show WatchDog, server, plugin, and bridge status", usage="watchdog status")
+        registry.register("plugins", cmd_plugins, "List loaded plugins", usage="watchdog plugins")
+        registry.register("plugin reload", cmd_plugin_reload, "Hot-load or reload one plugin", usage="watchdog plugin reload <name>")
+        registry.register("reload-plugin", cmd_plugin_reload, "Compatibility alias for plugin reload", usage="watchdog reload-plugin <name>")
+        registry.register("plugins reload", cmd_plugins_reload, "Reload all enabled plugins", usage="watchdog plugins reload")
+        registry.register("reload-plugins", cmd_plugins_reload, "Compatibility alias for plugins reload", usage="watchdog reload-plugins")
+        registry.register("bridge status", cmd_bridge_status, "Show helper bridge status", usage="watchdog bridge status")
+        registry.register("bridge veil", cmd_bridge_veil, "Send a helper message in-game", usage="watchdog bridge veil <message>")
+        registry.register("bridge broadcast", cmd_bridge_broadcast, "Broadcast a message in-game", usage="watchdog bridge broadcast <message>")
+        registry.register("server status", cmd_server_status, "Show Minecraft server status", usage="watchdog server status")
+        registry.register("server start", cmd_server_start, "Start Minecraft while keeping Watchdog alive", usage="watchdog server start")
+        registry.register("server stop", cmd_server_stop, "Gracefully stop Minecraft while keeping Watchdog alive", usage="watchdog server stop")
+        registry.register("server restart", cmd_server_restart, "Gracefully restart Minecraft while keeping Watchdog alive", usage="watchdog server restart")
+        registry.register("server kill", cmd_server_kill, "Force-kill Minecraft while keeping Watchdog alive", usage="watchdog server kill")
+        registry.register("server command", cmd_server_command, "Send a Minecraft command", usage="watchdog server command <minecraft command>")
+        registry.register("restart", cmd_reload, "Restart the full WatchDog process", usage="watchdog restart")
+        registry.register("stop", cmd_stop, "Stop Minecraft and shut down Watchdog", usage="watchdog stop")
+        registry.register("shutdown", cmd_stop, "Stop Minecraft and shut down Watchdog", usage="watchdog shutdown")
+        registry.register("quit", cmd_stop, "Stop Minecraft and shut down Watchdog", usage="watchdog quit")
+        registry.register("exit", cmd_stop, "Stop Minecraft and shut down Watchdog", usage="watchdog exit")
+        registry.register("reload", cmd_reload, "Restart the full watchdog process", usage="watchdog reload")
 
     async def console_loop(self, ctx, plugins: PluginLoader):
         logger = ctx.logger
         logger.info("Console input enabled. Type Minecraft commands here.")
-        logger.info("Wrapper commands: wrapper status | wrapper server status | wrapper server stop | wrapper server start | wrapper server restart | wrapper stop")
+        logger.info("watchdog commands: watchdog status | watchdog server status | watchdog server stop | watchdog server start | watchdog server restart | watchdog stop")
 
         while True:
             try:
@@ -257,14 +257,14 @@ class WrapperApp:
 
             lowered = command.lower()
 
-            if lowered.startswith("wrapper"):
+            if lowered.startswith("watchdog") or lowered.startswith("wrapper"):
                 try:
                     result = await ctx.command_registry.execute(command)
                 except Exception as exc:
-                    logger.exception("Wrapper command failed: %s", command)
+                    logger.exception("watchdog command failed: %s", command)
                     result = CommandResult(
                         ok=False,
-                        message=f"Wrapper command failed: {exc}",
+                        message=f"watchdog command failed: {exc}",
                     )
 
                 level = logger.info if result.ok else logger.warning
@@ -303,7 +303,7 @@ class WrapperApp:
         ctx.web_panel = None
 
         try:
-            logger.info("Wrapper booting: %s", config.get("wrapper.name", "Watchdog"))
+            logger.info("WatchDog booting: %s", config.get("wrapper.name", "Watchdog"))
 
             self.register_core_commands(ctx, plugins)
             await plugins.load_plugins()
@@ -340,7 +340,7 @@ class WrapperApp:
 
             if started:
                 await plugins.run_hook("after_server_start")
-                logger.info("Wrapper startup complete")
+                logger.info("watchdog startup complete")
 
                 ctx.server_output_task = asyncio.create_task(ctx.server_process.read_output_forever())
 
@@ -370,7 +370,7 @@ class WrapperApp:
             if getattr(server, "last_start_failure_reason", None) == "world_locked":
                 raise RuntimeError(
                     "Server world is already locked by another Minecraft process. "
-                    "Stop the existing server before starting the wrapper."
+                    "Stop the existing server before starting the watchdog."
                 )
 
             logger.info("Trying server start again after failure handling")
@@ -382,7 +382,7 @@ class WrapperApp:
                 raise RuntimeError("Server failed to start after rollback/failure handling")
 
             await plugins.run_hook("after_server_start")
-            logger.info("Wrapper startup complete after rollback")
+            logger.info("watchdog startup complete after rollback")
 
             ctx.server_output_task = asyncio.create_task(ctx.server_process.read_output_forever())
 
@@ -407,13 +407,13 @@ class WrapperApp:
             return
 
         except KeyboardInterrupt:
-            logger.info("Wrapper interrupted")
+            logger.info("watchdog interrupted")
             if ctx.server_process:
                 ctx.shutdown_requested = True
                 await ctx.server_process.stop()
 
         except Exception:
-            logger.exception("Wrapper failed")
+            logger.exception("watchdog failed")
             if ctx.server_process:
                 ctx.shutdown_requested = True
                 await ctx.server_process.stop()

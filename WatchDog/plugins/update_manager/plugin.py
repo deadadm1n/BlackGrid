@@ -30,7 +30,7 @@ class Plugin(WrapperPlugin):
             self.cmd_update,
             "Update WatchDog and the WatchDog Helper jar from GitHub releases",
             owner=self.name,
-            usage="wrapper update [status|check|download|apply]",
+            usage="watchdog update [status|check|download|apply]",
         )
 
     async def cmd_update(self, args):
@@ -71,7 +71,7 @@ class Plugin(WrapperPlugin):
                 data={"applied": applied},
             )
 
-        return CommandResult(ok=False, message="Usage: wrapper update [status|check|download|apply]")
+        return CommandResult(ok=False, message="Usage: watchdog update [status|check|download|apply]")
 
     async def check_all(self):
         available = {}
@@ -183,7 +183,7 @@ class Plugin(WrapperPlugin):
     def apply_wrapper(self, item, target):
         package_root = self.extract_zip(Path(item["download_path"]), item["tag_name"]) / "WatchDog"
         if not package_root.is_dir():
-            raise RuntimeError("WatchDog wrapper package is missing WatchDog/ root folder")
+            raise RuntimeError("WatchDog watchdog package is missing WatchDog/ root folder")
 
         preserve = set(target.get("preserve_paths", []))
         self.copy_tree_contents(package_root, self.ctx.base_dir, preserve)

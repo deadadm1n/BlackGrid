@@ -59,70 +59,70 @@ class WrapperPlugin:
             self.cmd_status,
             "Show ATM11 update status",
             owner=self.name,
-            usage="wrapper atm11 update status",
+            usage="watchdog atm11 update status",
         )
         registry.register(
             "minecraft update status",
             self.cmd_status,
             "Show Minecraft pack update status",
             owner=self.name,
-            usage="wrapper minecraft update status",
+            usage="watchdog minecraft update status",
         )
         registry.register(
             "atm11 update check",
             self.cmd_check,
             "Check CurseForge for a new ATM11 ServerFiles update",
             owner=self.name,
-            usage="wrapper atm11 update check",
+            usage="watchdog atm11 update check",
         )
         registry.register(
             "minecraft update check",
             self.cmd_check,
             "Check CurseForge for a new Minecraft pack update",
             owner=self.name,
-            usage="wrapper minecraft update check",
+            usage="watchdog minecraft update check",
         )
         registry.register(
             "atm11 update download",
             self.cmd_download,
             "Download the available ATM11 update without installing it",
             owner=self.name,
-            usage="wrapper atm11 update download",
+            usage="watchdog atm11 update download",
         )
         registry.register(
             "minecraft update download",
             self.cmd_download,
             "Download the available Minecraft pack update without installing it",
             owner=self.name,
-            usage="wrapper minecraft update download",
+            usage="watchdog minecraft update download",
         )
         registry.register(
             "atm11 update apply",
             self.cmd_apply,
             "Stop ATM11, install the downloaded update, validate startup, and rollback on failure",
             owner=self.name,
-            usage="wrapper atm11 update apply",
+            usage="watchdog atm11 update apply",
         )
         registry.register(
             "minecraft update apply",
             self.cmd_apply,
             "Stop Minecraft, install the downloaded pack update, validate startup, and rollback on failure",
             owner=self.name,
-            usage="wrapper minecraft update apply",
+            usage="watchdog minecraft update apply",
         )
         registry.register(
             "atm11 update clear",
             self.cmd_clear,
             "Clear available/pending ATM11 update state",
             owner=self.name,
-            usage="wrapper atm11 update clear",
+            usage="watchdog atm11 update clear",
         )
         registry.register(
             "minecraft update clear",
             self.cmd_clear,
             "Clear available/pending Minecraft update state",
             owner=self.name,
-            usage="wrapper minecraft update clear",
+            usage="watchdog minecraft update clear",
         )
 
     async def on_wrapper_stop(self, ctx):
@@ -206,7 +206,7 @@ class WrapperPlugin:
 
         message = (
             f"[ATM11Update] New update available: {display_name} | fileId={file_id}. "
-            "Use `wrapper atm11 update download` then `wrapper atm11 update apply` when ready."
+            "Use `watchdog atm11 update download` then `watchdog atm11 update apply` when ready."
         )
         self.ctx.logger.warning(message)
         await self.notify_discord(message)
@@ -407,7 +407,7 @@ class WrapperPlugin:
         )
         await self.notify_discord(
             f"[ATM11Update] Downloaded update: {latest['display_name']}. "
-            "Use `wrapper atm11 update apply` when ready."
+            "Use `watchdog atm11 update apply` when ready."
         )
 
     def download_file(self, url, path):
@@ -547,11 +547,11 @@ class WrapperPlugin:
         self.save_available(available)
         await self.notify_discord(
             f"[ATM11Update] New update available: {latest['display_name']} | fileId={latest['file_id']}. "
-            "Use `wrapper atm11 update download` then `wrapper atm11 update apply`."
+            "Use `watchdog atm11 update download` then `watchdog atm11 update apply`."
         )
 
         return CommandResult(
-            message=f"Update available: {latest['display_name']} ({latest['file_id']}). Run wrapper atm11 update download.",
+            message=f"Update available: {latest['display_name']} ({latest['file_id']}). Run watchdog atm11 update download.",
             data={"available": available},
         )
 
@@ -582,7 +582,7 @@ class WrapperPlugin:
         pending = self.load_pending()
 
         return CommandResult(
-            message=f"Downloaded update: {latest['display_name']}. Run wrapper atm11 update apply when ready.",
+            message=f"Downloaded update: {latest['display_name']}. Run watchdog atm11 update apply when ready.",
             data={"pending": pending or {}},
         )
 
@@ -590,7 +590,7 @@ class WrapperPlugin:
         pending = self.load_pending()
 
         if not pending:
-            return CommandResult(ok=False, message="No downloaded update is pending. Run wrapper atm11 update download first.")
+            return CommandResult(ok=False, message="No downloaded update is pending. Run watchdog atm11 update download first.")
 
         if pending.get("status") == "installed_waiting_for_boot_validation":
             return CommandResult(ok=False, message="An update is already installed and waiting for boot validation.")
@@ -600,7 +600,7 @@ class WrapperPlugin:
                 ok=False,
                 message=(
                     "A previous update apply was interrupted while installing. "
-                    "Inspect pending.json and the backup before retrying, or run wrapper atm11 update clear."
+                    "Inspect pending.json and the backup before retrying, or run watchdog atm11 update clear."
                 ),
                 data={"pending": pending},
             )

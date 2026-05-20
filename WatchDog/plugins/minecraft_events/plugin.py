@@ -46,5 +46,5 @@ class Plugin(WrapperPlugin):
             events_status,
             "Show Minecraft event bridge subscriptions",
             owner=self.name,
-            usage="wrapper minecraft events status",
+            usage="watchdog minecraft events status",
         )

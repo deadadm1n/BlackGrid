@@ -85,18 +85,18 @@ class CommandRegistry:
         if not tokens:
             return CommandResult(ok=False, message="No command provided")
 
-        if tokens[0].lower() == "wrapper":
+        if tokens[0].lower() in {"watchdog", "wrapper"}:
             tokens = tokens[1:]
 
         if not tokens:
-            return CommandResult(ok=False, message="Missing wrapper command")
+            return CommandResult(ok=False, message="Missing WatchDog command")
 
         command_name, args = self.resolve(tokens)
 
         if not command_name:
             return CommandResult(
                 ok=False,
-                message=f"Unknown wrapper command: {' '.join(tokens)}",
+                message=f"Unknown WatchDog command: {' '.join(tokens)}",
                 data={"available": self.list_commands()},
             )
 
