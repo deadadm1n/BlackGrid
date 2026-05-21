@@ -219,6 +219,11 @@ class WrapperPlugin:
         return await asyncio.to_thread(self.fetch_latest_serverfiles_sync)
 
     def fetch_latest_serverfiles_sync(self):
+        manual_latest = self.get_manual_serverfiles_update()
+
+        if manual_latest:
+            return manual_latest
+
         request = urllib.request.Request(
             self.ATM11_FILES_URL,
             headers={
@@ -309,6 +314,61 @@ class WrapperPlugin:
         # File IDs increase over time. Highest ID should be newest.
         matches.sort(key=lambda item: item["file_id"], reverse=True)
         return matches[0]
+
+    def get_manual_serverfiles_update(self):
+        manual_download_url = str(self.settings.get("manual_download_url", "") or "").strip()
+        manual_file_id = str(self.settings.get("manual_file_id", "") or "").strip()
+
+        if not manual_download_url and not manual_file_id:
+            return None
+
+        if manual_file_id:
+            if not manual_file_id.isdigit():
+                raise UpdateCheckUnavailable("manual_file_id must be numeric")
+
+            file_id = int(manual_file_id)
+        else:
+            file_id = self.extract_file_id_from_url(manual_download_url)
+
+            if not file_id:
+                raise UpdateCheckUnavailable("manual_download_url must include a CurseForge file id")
+
+        display_name = str(
+            self.settings.get("manual_display_name", "") or f"ServerFiles-{file_id}"
+        ).strip()
+
+        page_url = str(self.settings.get("manual_page_url", "") or "").strip()
+
+        if not page_url:
+            page_url = f"https://www.curseforge.com/minecraft/modpacks/all-the-mods-11/files/{file_id}"
+
+        if not manual_download_url:
+            manual_download_url = (
+                f"https://www.curseforge.com/api/v1/mods/"
+                f"{self.ATM11_PROJECT_ID}/files/{file_id}/download"
+            )
+
+        return {
+            "file_id": file_id,
+            "display_name": display_name,
+            "file_name": self.safe_zip_name(display_name),
+            "page_url": page_url,
+            "download_url": manual_download_url,
+            "source": "manual_config",
+        }
+
+    def extract_file_id_from_url(self, url):
+        match = re.search(r"/files/(\d+)", url)
+
+        if match:
+            return int(match.group(1))
+
+        match = re.search(r"/files/(\d+)/download", url)
+
+        if match:
+            return int(match.group(1))
+
+        return None
 
     def strip_html(self, text):
         text = re.sub(r"<[^>]+>", " ", text)

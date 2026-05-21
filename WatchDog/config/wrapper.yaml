@@ -100,6 +100,14 @@ plugins:
     keep_backups_days: 7
     notify_discord: false
 
+    # Optional manual fallback when CurseForge blocks server-side checks.
+    # Leave blank for automatic checks. Set manual_file_id or manual_download_url
+    # to force the updater to use a known ServerFiles release.
+    manual_file_id: ""
+    manual_display_name: ""
+    manual_page_url: ""
+    manual_download_url: ""
+
     # Folders replaced by pack updates.
     replace_dirs:
       - "config"
