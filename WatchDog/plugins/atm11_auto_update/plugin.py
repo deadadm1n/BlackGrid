@@ -1352,7 +1352,7 @@ class WrapperPlugin:
             return
 
         display_name = state.get("installed_display_name") or state.get("installed_file_name") or "unknown"
-        message = f"**AetherReach changelog:** `{display_name}`"
+        message = f"**All the Mods 11 changelog:** `{display_name}`"
 
         if changelog:
             message += f"\n\n{changelog}"
