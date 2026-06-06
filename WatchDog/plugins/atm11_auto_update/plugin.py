@@ -901,6 +901,7 @@ class WrapperPlugin:
             "[ATM11Update] Update confirmed successful: %s",
             state["installed_display_name"],
         )
+        await self.notify_version_channel(state)
 
     # Called by auto_restart plugin after updated server fails startup validation.
     async def after_scheduled_restart_failed(self, ctx=None):
@@ -1285,6 +1286,37 @@ class WrapperPlugin:
 
         if callable(send_discord):
             await send_discord(f"```ansi\n{message}\n```")
+
+    async def notify_version_channel(self, state):
+        channel_id = int(self.settings.get("version_channel_id", 0) or 0)
+
+        if not channel_id:
+            return
+
+        plugin_loader = getattr(self.ctx, "plugin_loader", None)
+
+        if not plugin_loader:
+            return
+
+        discord_plugin = plugin_loader.plugins.get("discord_bot")
+
+        if not discord_plugin:
+            return
+
+        send_discord = getattr(discord_plugin, "send_discord", None)
+
+        if not callable(send_discord):
+            return
+
+        display_name = state.get("installed_display_name") or state.get("installed_file_name") or "unknown"
+        file_id = state.get("installed_file_id") or "unknown"
+        message = (
+            "**The Veil has stabilized.**\n"
+            f"AetherReach is now running `{display_name}`.\n"
+            f"ServerFiles file id: `{file_id}`"
+        )
+
+        await send_discord(message, channel_id=channel_id)
 
 
 Plugin = WrapperPlugin

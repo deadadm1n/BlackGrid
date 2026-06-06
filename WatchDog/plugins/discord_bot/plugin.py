@@ -182,7 +182,7 @@ class Plugin(WrapperPlugin):
 
         await ctx.server_process.send_command(command)
 
-    async def send_discord(self, message: str):
+    async def send_discord(self, message: str, channel_id=None):
         if not self.client:
             return
 
@@ -193,8 +193,18 @@ class Plugin(WrapperPlugin):
                 self.ctx.logger.warning("[DiscordBot] Timed out waiting for Discord client readiness")
             return
 
-        if self.channel:
-            await self.channel.send(message)
+        channel = self.channel
+
+        if channel_id:
+            try:
+                channel = await self.client.fetch_channel(int(channel_id))
+            except Exception as e:
+                if self.ctx:
+                    self.ctx.logger.warning("[DiscordBot] Could not fetch channel ID %s: %s", channel_id, e)
+                return
+
+        if channel:
+            await channel.send(message)
 
     def server_display_name(self):
         return str(self.settings.get("server_name", "") or "Minecraft").strip()
