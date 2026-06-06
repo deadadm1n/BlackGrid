@@ -4,9 +4,13 @@
     "display_name": "ServerFiles-0.0.23.zip Latest release R 26.1.2 NeoForge Jun 3, 2026",
     "page_url": "https://www.curseforge.com/minecraft/modpacks/all-the-mods-11/files/8189300",
     "download_url": "https://www.curseforge.com/api/v1/mods/1148445/files/8189300/download",
-    "discovered_at": "2026-06-06T13:11:21.066882+00:00",
+    "discovered_at": "2026-06-06T13:28:15.313063+00:00",
     "previous_file_id": 8189300,
     "source": "curseforge_files_page",
-    "metadata_source_url": "https://r.jina.ai/http://https://www.curseforge.com/minecraft/modpacks/all-the-mods-11/files/all"
+    "metadata_source_url": "https://r.jina.ai/http://https://www.curseforge.com/minecraft/modpacks/all-the-mods-11/files/all",
+    "changelog_file_id": 8189294,
+    "changelog_url": "https://www.curseforge.com/minecraft/modpacks/all-the-mods-11/files/8189294/changelog",
+    "changelog_source_url": "https://r.jina.ai/http://https://www.curseforge.com/minecraft/modpacks/all-the-mods-11/files/8189294/changelog",
+    "changelog": "**Removed:**\n\n*   Shrink (dep on Polylib)\n*   Polylib (crash due to latest neoforge breaking change)\n\n**Added:**\n\n*   Productive Farming\n*   Productive Metalworks\n*   Productive Bees\n*   Silent Gear Metalworks\n*   Silent Gems\n*   Step Crafter\n\n_Updated All the Mods_\n\n_Neoforge Version is 26.1.2.71_\n\n**ALWAYS REMEMBER TO BACKUP BEFORE UPDATING**"
   }
 }

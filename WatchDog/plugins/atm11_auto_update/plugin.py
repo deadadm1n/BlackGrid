@@ -445,7 +445,7 @@ class WrapperPlugin:
                 f"{self.ATM11_PROJECT_ID}/files/{file_id}/download"
             )
 
-        return {
+        latest = {
             "file_id": file_id,
             "display_name": display_name,
             "file_name": self.safe_zip_name(display_name),
@@ -453,6 +453,12 @@ class WrapperPlugin:
             "download_url": download_url,
             "source": "manifest",
         }
+
+        for key in ("changelog", "changelog_url", "changelog_file_id", "changelog_source_url"):
+            if data.get(key):
+                latest[key] = data[key]
+
+        return latest
 
     def first_present(self, data, *keys):
         for key in keys:
@@ -570,6 +576,10 @@ class WrapperPlugin:
             "downloaded_at": datetime.now(timezone.utc).isoformat(),
             "status": pending_status,
         }
+
+        for key in ("changelog", "changelog_url", "changelog_file_id", "changelog_source_url"):
+            if latest.get(key):
+                pending[key] = latest[key]
 
         self.save_pending(pending)
 
@@ -890,6 +900,12 @@ class WrapperPlugin:
         state["installed_display_name"] = pending.get("display_name")
         state["installed_at"] = datetime.now(timezone.utc).isoformat()
         state["last_successful_backup"] = pending.get("backup_path")
+
+        for key in ("changelog", "changelog_url", "changelog_file_id", "changelog_source_url"):
+            if pending.get(key):
+                state[key] = pending[key]
+            else:
+                state.pop(key, None)
 
         self.save_state(state)
         self.clear_pending()
@@ -1315,8 +1331,28 @@ class WrapperPlugin:
             f"AetherReach is now running `{display_name}`.\n"
             f"ServerFiles file id: `{file_id}`"
         )
+        changelog = self.format_discord_changelog(state.get("changelog"))
+        changelog_url = state.get("changelog_url")
+
+        if changelog:
+            message += f"\n\n**Changelog:**\n{changelog}"
+
+        if changelog_url:
+            message += f"\n\nFull changelog: {changelog_url}"
 
         await send_discord(message, channel_id=channel_id)
+
+    def format_discord_changelog(self, changelog):
+        if not changelog:
+            return ""
+
+        text = str(changelog).strip()
+        max_length = 1500
+
+        if len(text) > max_length:
+            text = text[:max_length].rstrip() + "\n..."
+
+        return text
 
 
 Plugin = WrapperPlugin

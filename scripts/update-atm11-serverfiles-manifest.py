@@ -90,6 +90,19 @@ def extract_serverfiles_title(text, file_id):
     return f"ServerFiles-{file_id}"
 
 
+def extract_pack_version(title):
+    match = re.search(
+        r"(?:ServerFiles|Server Files)[-_ ]?([0-9]+(?:\.[0-9]+)+)",
+        title,
+        re.IGNORECASE,
+    )
+
+    if match:
+        return match.group(1)
+
+    return None
+
+
 def parse_latest_serverfiles(html):
     candidates = []
     seen = set()
@@ -138,7 +151,9 @@ def parse_latest_serverfiles(html):
         raise ManifestUpdateError("Could not find an ATM11 ServerFiles entry on the CurseForge files page")
 
     candidates.sort(key=lambda item: item["file_id"], reverse=True)
-    return candidates[0]
+    latest = candidates[0]
+    attach_matching_pack_file(html, latest)
+    return latest
 
 
 def build_candidate(file_id, display_name):
@@ -150,6 +165,74 @@ def build_candidate(file_id, display_name):
         "page_url": page_url,
         "download_url": f"https://www.curseforge.com/api/v1/mods/{ATM11_PROJECT_ID}/files/{file_id}/download",
     }
+
+
+def attach_matching_pack_file(html, latest):
+    pack_version = extract_pack_version(latest["display_name"])
+
+    if not pack_version:
+        return
+
+    pattern = re.compile(
+        r"\[All the Mods 11-" + re.escape(pack_version) + r"(?P<title>[^\]]*)\]"
+        r"\(https://www\.curseforge\.com/minecraft/modpacks/all-the-mods-11/files/(?P<file_id>\d+)\)",
+        re.IGNORECASE,
+    )
+
+    for match in pattern.finditer(html):
+        file_id = int(match.group("file_id"))
+
+        if file_id == int(latest["file_id"]):
+            continue
+
+        latest["changelog_file_id"] = file_id
+        latest["changelog_url"] = (
+            f"https://www.curseforge.com/minecraft/modpacks/all-the-mods-11/files/{file_id}/changelog"
+        )
+        return
+
+
+def extract_changelog(markdown):
+    marker = re.search(
+        r"\*\s+\[Related Projects\]\([^)]+\)\s*(?P<body>.*?)"
+        r"(?:\n\[!\[Image|\nCurseForge -|\nWe use cookies|\Z)",
+        markdown,
+        re.IGNORECASE | re.DOTALL,
+    )
+
+    if not marker:
+        if "File has no changelog" in markdown:
+            return ""
+
+        return ""
+
+    body = marker.group("body").strip()
+
+    if "File has no changelog" in body:
+        return ""
+
+    body = re.sub(r"\n{3,}", "\n\n", body)
+    return body.strip()
+
+
+def attach_changelog(latest, use_reader=True):
+    changelog_url = latest.get("changelog_url")
+
+    if not changelog_url:
+        return
+
+    for source_url in candidate_source_urls(changelog_url, use_reader=use_reader):
+        try:
+            changelog = extract_changelog(fetch_text(source_url))
+        except ManifestUpdateError:
+            continue
+
+        latest["changelog_source_url"] = source_url
+
+        if changelog:
+            latest["changelog"] = changelog
+
+        return
 
 
 def read_manifest(path):
@@ -194,6 +277,10 @@ def write_manifest(path, latest, previous_id):
             "previous_file_id": previous_id or None,
             "source": "curseforge_files_page",
             "metadata_source_url": latest.get("metadata_source_url"),
+            "changelog_file_id": latest.get("changelog_file_id"),
+            "changelog_url": latest.get("changelog_url"),
+            "changelog_source_url": latest.get("changelog_source_url"),
+            "changelog": latest.get("changelog"),
         }
     }
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
@@ -223,6 +310,8 @@ def main(argv=None):
 
     if latest is None:
         raise ManifestUpdateError("Could not discover ATM11 ServerFiles. " + " | ".join(errors))
+
+    attach_changelog(latest, use_reader=not args.no_reader)
 
     if latest["file_id"] < previous_id:
         raise ManifestUpdateError(
