@@ -1342,9 +1342,8 @@ class WrapperPlugin:
             return
 
         changelog = self.format_discord_changelog(state.get("changelog"))
-        changelog_url = state.get("changelog_url")
 
-        if not changelog and not changelog_url:
+        if not changelog:
             return
 
         send_discord = self.get_discord_sender()
@@ -1357,9 +1356,6 @@ class WrapperPlugin:
 
         if changelog:
             message += f"\n\n{changelog}"
-
-        if changelog_url:
-            message += f"\n\nFull changelog: {changelog_url}"
 
         await send_discord(message, channel_id=channel_id)
 
@@ -1381,6 +1377,23 @@ class WrapperPlugin:
             return ""
 
         text = str(changelog).strip()
+        skipped_patterns = [
+            r"^_?Updated All the Mods_?$",
+            r"^_?Neoforge Version is .+_?$",
+            r"^\*\*ALWAYS REMEMBER TO BACKUP BEFORE UPDATING\*\*$",
+        ]
+        lines = []
+
+        for line in text.splitlines():
+            stripped = line.strip()
+
+            if any(re.match(pattern, stripped, re.IGNORECASE) for pattern in skipped_patterns):
+                continue
+
+            lines.append(line)
+
+        text = "\n".join(lines).strip()
+        text = re.sub(r"\n{3,}", "\n\n", text)
         max_length = 1500
 
         if len(text) > max_length:
