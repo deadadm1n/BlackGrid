@@ -512,15 +512,25 @@
     }
 
     .rank {
+      appearance: none;
+      width: 100%;
       min-width: 0;
       padding: 16px;
       border: 1px solid var(--line);
       border-radius: 8px;
       background: rgba(13, 19, 33, .9);
+      text-align: left;
+      cursor: pointer;
     }
 
     .rank.progression {
       border-color: rgba(34, 211, 238, .28);
+    }
+
+    .rank.active {
+      border-color: var(--cyan);
+      background: linear-gradient(135deg, rgba(34, 211, 238, .14), rgba(139, 92, 246, .12));
+      box-shadow: inset 0 -2px 0 rgba(34, 211, 238, .82);
     }
 
     .rank strong {
@@ -531,9 +541,54 @@
     }
 
     .rank span {
+      display: block;
       color: var(--muted);
       font-size: 13px;
       overflow-wrap: break-word;
+    }
+
+    .rank-detail-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin: 16px 0;
+    }
+
+    .rank-detail-stat {
+      min-height: 86px;
+      padding: 14px;
+      border: 1px solid rgba(148, 163, 184, .18);
+      border-radius: 8px;
+      background: rgba(13, 19, 33, .82);
+    }
+
+    .rank-detail-stat span {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    .rank-detail-stat strong {
+      color: var(--ink);
+      font-size: 20px;
+      overflow-wrap: anywhere;
+    }
+
+    .detail-columns {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 14px;
+      margin-top: 12px;
+    }
+
+    .detail-list {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
     }
 
     .vip {
@@ -616,7 +671,8 @@
       }
 
       .stat-grid,
-      .rank-row {
+      .rank-row,
+      .rank-detail-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
@@ -716,7 +772,9 @@
       }
 
       .stat-grid,
-      .rank-row {
+      .rank-row,
+      .rank-detail-grid,
+      .detail-columns {
         grid-template-columns: 1fr;
       }
 
@@ -889,52 +947,51 @@
         <div class="grid">
           <article class="card full">
             <h3>AetherReach Ranks</h3>
-            <p>These are pulled from the live FTB Ranks setup. Regular players progress by playtime, while supporter tiers can be assigned separately for VIP-style perks.</p>
+            <p>Select a rank to view its unlock condition, limits, Shard income, auction slots, and command unlocks.</p>
             <div class="rank-row">
-              <div class="rank progression"><strong>Wanderer</strong><span>Default rank. 20 claimed chunks, 8 force-loaded chunks, 2 Shards per 10 minutes, 2 auction slots.</span></div>
-              <div class="rank progression"><strong>Builder</strong><span>20 hours. 30 claimed chunks, 10 force-loaded chunks, 3 Shards per 10 minutes, 4 auction slots.</span></div>
-              <div class="rank progression"><strong>Artificer</strong><span>75 hours. 40 claimed chunks, 20 force-loaded chunks, 4 Shards per 10 minutes, 6 auction slots.</span></div>
-              <div class="rank progression"><strong>Architect</strong><span>200 hours. 50 claimed chunks, 30 force-loaded chunks, 5 Shards per 10 minutes, 8 auction slots.</span></div>
-              <div class="rank progression"><strong>Ascendant</strong><span>500 hours. 60 claimed chunks, 40 force-loaded chunks, 6 Shards per 10 minutes, 12 auction slots.</span></div>
-              <div class="rank vip"><strong>Patron</strong><span>Supporter tier. 80 claimed chunks, 50 force-loaded chunks, 7 Shards per 10 minutes, 14 auction slots.</span></div>
-              <div class="rank vip"><strong>Pillar</strong><span>Supporter tier. 90 claimed chunks, 60 force-loaded chunks, 8 Shards per 10 minutes, 18 auction slots.</span></div>
-              <div class="rank vip"><strong>Exalted</strong><span>Supporter tier. 100 claimed chunks, 70 force-loaded chunks, 10 Shards per 10 minutes, 24 auction slots.</span></div>
+              <button class="rank progression active" type="button" data-rank="wanderer"><strong>Wanderer</strong><span>Default starting rank.</span></button>
+              <button class="rank progression" type="button" data-rank="builder"><strong>Builder</strong><span>Playtime rank.</span></button>
+              <button class="rank progression" type="button" data-rank="artificer"><strong>Artificer</strong><span>Playtime rank.</span></button>
+              <button class="rank progression" type="button" data-rank="architect"><strong>Architect</strong><span>Playtime rank.</span></button>
+              <button class="rank progression" type="button" data-rank="ascendant"><strong>Ascendant</strong><span>Top playtime rank.</span></button>
+              <button class="rank vip" type="button" data-rank="patron"><strong>Patron</strong><span>Supporter tier.</span></button>
+              <button class="rank vip" type="button" data-rank="pillar"><strong>Pillar</strong><span>Supporter tier.</span></button>
+              <button class="rank vip" type="button" data-rank="exalted"><strong>Exalted</strong><span>Supporter tier.</span></button>
             </div>
           </article>
-          <article class="card wide">
-            <h3>Rank Ladder</h3>
-            <table class="rank-table">
-              <thead>
-                <tr>
-                  <th>Rank</th>
-                  <th>Unlock</th>
-                  <th>Claims</th>
-                  <th>Force Loaded</th>
-                  <th>Shards</th>
-                  <th>Auctions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><td><strong>Wanderer</strong></td><td>Default</td><td>20</td><td>8</td><td>2 / 10 min</td><td>2</td></tr>
-                <tr><td><strong>Builder</strong></td><td>20 hours</td><td>30</td><td>10</td><td>3 / 10 min</td><td>4</td></tr>
-                <tr><td><strong>Artificer</strong></td><td>75 hours</td><td>40</td><td>20</td><td>4 / 10 min</td><td>6</td></tr>
-                <tr><td><strong>Architect</strong></td><td>200 hours</td><td>50</td><td>30</td><td>5 / 10 min</td><td>8</td></tr>
-                <tr><td><strong>Ascendant</strong></td><td>500 hours</td><td>60</td><td>40</td><td>6 / 10 min</td><td>12</td></tr>
-                <tr><td><strong>Patron</strong></td><td>Supporter</td><td>80</td><td>50</td><td>7 / 10 min</td><td>14</td></tr>
-                <tr><td><strong>Pillar</strong></td><td>Supporter</td><td>90</td><td>60</td><td>8 / 10 min</td><td>18</td></tr>
-                <tr><td><strong>Exalted</strong></td><td>Supporter</td><td>100</td><td>70</td><td>10 / 10 min</td><td>24</td></tr>
-              </tbody>
-            </table>
+          <article class="card wide" id="rank-detail-panel">
+            <h3 id="rank-detail-title">Wanderer</h3>
+            <p id="rank-detail-summary">Default starting rank.</p>
+            <div class="rank-detail-grid">
+              <div class="rank-detail-stat"><span>Unlock</span><strong id="rank-unlock">Default</strong></div>
+              <div class="rank-detail-stat"><span>Claims</span><strong id="rank-claims">20</strong></div>
+              <div class="rank-detail-stat"><span>Force Loaded</span><strong id="rank-force-loaded">8</strong></div>
+              <div class="rank-detail-stat"><span>Power</span><strong id="rank-power">1</strong></div>
+              <div class="rank-detail-stat"><span>Shards</span><strong id="rank-shards">2 / 10 min</strong></div>
+              <div class="rank-detail-stat"><span>Auctions</span><strong id="rank-auctions">2</strong></div>
+              <div class="rank-detail-stat"><span>Parent</span><strong id="rank-parent">None</strong></div>
+              <div class="rank-detail-stat"><span>Type</span><strong id="rank-type">Progression</strong></div>
+            </div>
+            <div class="detail-columns">
+              <div>
+                <h3>Unlocks</h3>
+                <ul class="detail-list" id="rank-unlocks"></ul>
+              </div>
+              <div>
+                <h3>Commands</h3>
+                <ul class="detail-list" id="rank-commands"></ul>
+              </div>
+            </div>
             <p class="rank-note">Staff ranks like Warden, Overseer, Oracle, and Sovereign exist for moderation/admin work and are not advertised as player progression.</p>
           </article>
           <article class="card">
-            <h3>Command Unlocks</h3>
+            <h3>How To Read This</h3>
+            <p>Progression ranks are earned by playtime. Supporter ranks can sit above progression and add higher limits.</p>
             <ul class="pill-list">
-              <li>Wanderer: homes, back, TPA, RTP, warps</li>
-              <li>Builder: RTP distance controls, list warps, TPA here</li>
-              <li>Artificer: crafting/anvil open, trashcan, hat</li>
-              <li>Architect: nickname, near, leaderboard</li>
-              <li>Ascendant: heal, feed, ender chest, guide</li>
+              <li>Claims = FTB Chunks claimed chunks</li>
+              <li>Force Loaded = always-loaded chunks</li>
+              <li>Shards = passive currency income</li>
+              <li>Auctions = active player exchange listings</li>
             </ul>
           </article>
         </div>
@@ -1007,6 +1064,136 @@
     const playerCount = document.getElementById("player-count");
     const statusPlayers = document.getElementById("status-players");
     const statusDetail = document.getElementById("status-detail");
+    const rankButtons = [...document.querySelectorAll("[data-rank]")];
+    const rankFields = {
+      title: document.getElementById("rank-detail-title"),
+      summary: document.getElementById("rank-detail-summary"),
+      unlock: document.getElementById("rank-unlock"),
+      claims: document.getElementById("rank-claims"),
+      forceLoaded: document.getElementById("rank-force-loaded"),
+      power: document.getElementById("rank-power"),
+      shards: document.getElementById("rank-shards"),
+      auctions: document.getElementById("rank-auctions"),
+      parent: document.getElementById("rank-parent"),
+      type: document.getElementById("rank-type"),
+      unlocks: document.getElementById("rank-unlocks"),
+      commands: document.getElementById("rank-commands")
+    };
+
+    const ranks = {
+      wanderer: {
+        name: "Wanderer",
+        summary: "Default starting rank. The baseline AetherReach player kit for homes, TPA, RTP, warps, Shards, and auction access.",
+        unlock: "Default",
+        claims: 20,
+        forceLoaded: 8,
+        power: 1,
+        shards: "2 / 10 min",
+        auctions: 2,
+        parent: "None",
+        type: "Progression",
+        unlocks: ["Welcome kit access", "Homes and teleport basics", "RTP and warp access", "Back command support"],
+        commands: ["/spawn", "/home", "/sethome", "/delhome", "/listhomes", "/back", "/tpa", "/tpaccept", "/tpdeny", "/rtp", "/warp"]
+      },
+      builder: {
+        name: "Builder",
+        summary: "First playtime step for players who have settled in and started building real roots.",
+        unlock: "20 hours",
+        claims: 30,
+        forceLoaded: 10,
+        power: 10,
+        shards: "3 / 10 min",
+        auctions: 4,
+        parent: "Wanderer",
+        type: "Progression",
+        unlocks: ["Higher claims and force-loaded chunks", "More Shards", "More auction slots", "RTP distance control"],
+        commands: ["/listwarps", "/tpahere", "RTP min distance", "RTP max distance"]
+      },
+      artificer: {
+        name: "Artificer",
+        summary: "Mid-tier progression for players deep enough into the pack to value utility commands.",
+        unlock: "75 hours",
+        claims: 40,
+        forceLoaded: 20,
+        power: 20,
+        shards: "4 / 10 min",
+        auctions: 6,
+        parent: "Builder",
+        type: "Progression",
+        unlocks: ["Crafting and anvil utility", "Trashcan command", "Hat command", "More automation breathing room"],
+        commands: ["/open crafting", "/open anvil", "/trashcan", "/hat"]
+      },
+      architect: {
+        name: "Architect",
+        summary: "Established player rank for long-term builders and progression players.",
+        unlock: "200 hours",
+        claims: 50,
+        forceLoaded: 30,
+        power: 30,
+        shards: "5 / 10 min",
+        auctions: 8,
+        parent: "Artificer",
+        type: "Progression",
+        unlocks: ["Nickname access", "Nearby player tools", "Leaderboard access", "Stronger economy limits"],
+        commands: ["/nickname", "/near", "/leaderboard time_played", "/leaderboard deaths"]
+      },
+      ascendant: {
+        name: "Ascendant",
+        summary: "Top playtime progression rank before supporter tiers.",
+        unlock: "500 hours",
+        claims: 60,
+        forceLoaded: 40,
+        power: 40,
+        shards: "6 / 10 min",
+        auctions: 12,
+        parent: "Architect",
+        type: "Progression",
+        unlocks: ["Heal and feed utility", "Ender chest access", "Guide command access", "Highest normal playtime limits"],
+        commands: ["/heal", "/feed", "/enderchest", "/guideme"]
+      },
+      patron: {
+        name: "Patron",
+        summary: "Supporter tier with higher limits and several convenience commands.",
+        unlock: "Supporter",
+        claims: 80,
+        forceLoaded: 50,
+        power: 60,
+        shards: "7 / 10 min",
+        auctions: 14,
+        parent: "Ascendant",
+        type: "Supporter",
+        unlocks: ["Supporter claim limits", "Higher force-loaded chunk cap", "More Shards", "More auction listings"],
+        commands: ["/hat", "/open crafting", "/open anvil", "/trashcan", "/nickname"]
+      },
+      pillar: {
+        name: "Pillar",
+        summary: "Higher supporter tier for players backing the server long-term.",
+        unlock: "Supporter",
+        claims: 90,
+        forceLoaded: 60,
+        power: 70,
+        shards: "8 / 10 min",
+        auctions: 18,
+        parent: "Patron",
+        type: "Supporter",
+        unlocks: ["Smithing and stonecutter utility", "Ender chest access", "Feed and near tools", "More trading room"],
+        commands: ["/open smithing", "/open stonecutter", "/enderchest", "/feed", "/near"]
+      },
+      exalted: {
+        name: "Exalted",
+        summary: "Top public supporter tier in the current FTB Ranks setup.",
+        unlock: "Supporter",
+        claims: 100,
+        forceLoaded: 70,
+        power: 80,
+        shards: "10 / 10 min",
+        auctions: 24,
+        parent: "Pillar",
+        type: "Supporter",
+        unlocks: ["Highest public claim cap", "Highest public force-loaded cap", "Highest public Shard income", "Largest auction limit"],
+        commands: ["/heal", "/fly", "/speed"]
+      }
+    };
 
     function activate(viewName, pushHash = true) {
       const target = document.getElementById(`view-${viewName}`);
@@ -1036,6 +1223,38 @@
     if (initial) {
       activate(initial, false);
     }
+
+    function fillList(element, items) {
+      element.replaceChildren(...items.map(item => {
+        const li = document.createElement("li");
+        li.textContent = item;
+        return li;
+      }));
+    }
+
+    function selectRank(rankId) {
+      const rank = ranks[rankId] || ranks.wanderer;
+
+      rankButtons.forEach(button => button.classList.toggle("active", button.dataset.rank === rankId));
+      rankFields.title.textContent = rank.name;
+      rankFields.summary.textContent = rank.summary;
+      rankFields.unlock.textContent = rank.unlock;
+      rankFields.claims.textContent = rank.claims;
+      rankFields.forceLoaded.textContent = rank.forceLoaded;
+      rankFields.power.textContent = rank.power;
+      rankFields.shards.textContent = rank.shards;
+      rankFields.auctions.textContent = rank.auctions;
+      rankFields.parent.textContent = rank.parent;
+      rankFields.type.textContent = rank.type;
+      fillList(rankFields.unlocks, rank.unlocks);
+      fillList(rankFields.commands, rank.commands);
+    }
+
+    rankButtons.forEach(button => {
+      button.addEventListener("click", () => selectRank(button.dataset.rank));
+    });
+
+    selectRank("wanderer");
 
     async function loadStatus() {
       try {
