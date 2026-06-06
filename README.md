@@ -71,6 +71,12 @@ configs/atm11-serverfiles.json
 
 When that manifest points at a newer ServerFiles `file_id`, the live wrapper downloads it automatically and queues it for the next scheduled restart. The update backs up the server first, preserves the configured local folders and custom jars, validates startup, and rolls back if validation fails.
 
+The manifest is refreshed by the scheduled GitHub Actions workflow in `.github/workflows/atm11-serverfiles-manifest.yml`. You can also run the scraper manually:
+
+```text
+python scripts/update-atm11-serverfiles-manifest.py
+```
+
 ## Discord Linking
 
 WatchDog Helper exposes `/discord` in Minecraft. The player runs it in-game, then clicks the generated Discord OAuth link.

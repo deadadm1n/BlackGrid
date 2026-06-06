@@ -1,0 +1,38 @@
+name: ATM11 ServerFiles Manifest
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 */4 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  update-manifest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Update ATM11 manifest
+        run: python scripts/update-atm11-serverfiles-manifest.py
+
+      - name: Commit manifest change
+        run: |
+          if git diff --quiet -- configs/atm11-serverfiles.json; then
+            echo "ATM11 manifest is already current."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add configs/atm11-serverfiles.json
+          git commit -m "Update ATM11 ServerFiles manifest"
+          git push
