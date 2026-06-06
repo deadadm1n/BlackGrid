@@ -918,6 +918,7 @@ class WrapperPlugin:
             state["installed_display_name"],
         )
         await self.notify_version_channel(state)
+        await self.notify_changelog_channel(state)
 
     # Called by auto_restart plugin after updated server fails startup validation.
     async def after_scheduled_restart_failed(self, ctx=None):
@@ -1331,16 +1332,49 @@ class WrapperPlugin:
             f"AetherReach is now running `{display_name}`.\n"
             f"ServerFiles file id: `{file_id}`"
         )
+
+        await send_discord(message, channel_id=channel_id)
+
+    async def notify_changelog_channel(self, state):
+        channel_id = int(self.settings.get("changelog_channel_id", 0) or 0)
+
+        if not channel_id:
+            return
+
         changelog = self.format_discord_changelog(state.get("changelog"))
         changelog_url = state.get("changelog_url")
 
+        if not changelog and not changelog_url:
+            return
+
+        send_discord = self.get_discord_sender()
+
+        if not callable(send_discord):
+            return
+
+        display_name = state.get("installed_display_name") or state.get("installed_file_name") or "unknown"
+        message = f"**AetherReach changelog:** `{display_name}`"
+
         if changelog:
-            message += f"\n\n**Changelog:**\n{changelog}"
+            message += f"\n\n{changelog}"
 
         if changelog_url:
             message += f"\n\nFull changelog: {changelog_url}"
 
         await send_discord(message, channel_id=channel_id)
+
+    def get_discord_sender(self):
+        plugin_loader = getattr(self.ctx, "plugin_loader", None)
+
+        if not plugin_loader:
+            return None
+
+        discord_plugin = plugin_loader.plugins.get("discord_bot")
+
+        if not discord_plugin:
+            return None
+
+        return getattr(discord_plugin, "send_discord", None)
 
     def format_discord_changelog(self, changelog):
         if not changelog:

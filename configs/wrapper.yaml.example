@@ -103,6 +103,7 @@ plugins:
     keep_backups_days: 7
     notify_discord: false
     version_channel_id: 1510814785271234641
+    changelog_channel_id: 1512810676501090385
 
     # Optional manual override.
     # Leave blank for manifest checks. Set manual_file_id or manual_download_url
