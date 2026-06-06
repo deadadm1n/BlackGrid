@@ -227,6 +227,15 @@ plugins:
   minecraft_events:
     enabled: false
 
+  # Public website status.
+  website_status:
+    enabled: false
+    output_path: ""
+    update_interval_seconds: 15
+    server_name: "AetherReach"
+    public_address: "blackgrid.online"
+    max_players: 0
+
   # GitHub release updater.
   update_manager:
     enabled: false

@@ -1258,7 +1258,7 @@
 
     async function loadStatus() {
       try {
-        const response = await fetch("/status/aetherreach.json", { cache: "no-store" });
+        const response = await fetch(`/status/aetherreach.json?ts=${Date.now()}`, { cache: "no-store" });
 
         if (!response.ok) {
           throw new Error("Status unavailable");
