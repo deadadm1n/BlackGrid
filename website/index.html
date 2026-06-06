@@ -395,6 +395,7 @@
 
     .card {
       grid-column: span 4;
+      min-width: 0;
       min-height: 100%;
       padding: 20px;
       border: 1px solid var(--line);
@@ -423,6 +424,7 @@
     .card p,
     .card li {
       color: var(--muted);
+      overflow-wrap: break-word;
     }
 
     .stat-grid {
@@ -510,10 +512,15 @@
     }
 
     .rank {
+      min-width: 0;
       padding: 16px;
       border: 1px solid var(--line);
       border-radius: 8px;
       background: rgba(13, 19, 33, .9);
+    }
+
+    .rank.progression {
+      border-color: rgba(34, 211, 238, .28);
     }
 
     .rank strong {
@@ -526,6 +533,7 @@
     .rank span {
       color: var(--muted);
       font-size: 13px;
+      overflow-wrap: break-word;
     }
 
     .vip {
@@ -534,6 +542,51 @@
 
     .loyal {
       border-color: rgba(52, 211, 153, .45);
+    }
+
+    .rank-table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .rank-table th,
+    .rank-table td {
+      padding: 12px;
+      border-bottom: 1px solid rgba(148, 163, 184, .14);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .rank-table th {
+      color: var(--gold);
+      background: rgba(13, 19, 33, .9);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    .rank-table td {
+      color: var(--muted);
+      background: rgba(17, 24, 39, .62);
+    }
+
+    .rank-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .rank-table strong {
+      color: var(--ink);
+    }
+
+    .rank-note {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 13px;
     }
 
     .placeholder {
@@ -586,6 +639,7 @@
 
       .main {
         padding: 14px;
+        overflow-x: hidden;
       }
 
       .top-strip {
@@ -611,6 +665,11 @@
     @media (max-width: 520px) {
       .sidebar {
         padding: 16px;
+      }
+
+      .top-strip,
+      .view {
+        max-width: 350px;
       }
 
       .brand {
@@ -663,6 +722,12 @@
 
       .command-list li {
         display: grid;
+      }
+
+      .rank-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
       }
     }
   </style>
@@ -823,14 +888,54 @@
       <section class="view" id="view-vip" data-title="BlackGrid / AetherReach / Ranks and VIP">
         <div class="grid">
           <article class="card full">
-            <h3>Ranks And VIP</h3>
-            <p>BlackGrid has simple Discord-facing roles now, with room to grow into supporter perks and server features as the community settles in.</p>
+            <h3>AetherReach Ranks</h3>
+            <p>These are pulled from the live FTB Ranks setup. Regular players progress by playtime, while supporter tiers can be assigned separately for VIP-style perks.</p>
             <div class="rank-row">
-              <div class="rank"><strong>Member</strong><span>Basic linked community role.</span></div>
-              <div class="rank loyal"><strong>Loyal</strong><span>For regular players who stick around.</span></div>
-              <div class="rank vip"><strong>VIP</strong><span>Supporter lane for backing BlackGrid.</span></div>
-              <div class="rank"><strong>Staff</strong><span>Helpers and moderators keeping the world fair.</span></div>
+              <div class="rank progression"><strong>Wanderer</strong><span>Default rank. 20 claimed chunks, 8 force-loaded chunks, 2 Shards per 10 minutes, 2 auction slots.</span></div>
+              <div class="rank progression"><strong>Builder</strong><span>20 hours. 30 claimed chunks, 10 force-loaded chunks, 3 Shards per 10 minutes, 4 auction slots.</span></div>
+              <div class="rank progression"><strong>Artificer</strong><span>75 hours. 40 claimed chunks, 20 force-loaded chunks, 4 Shards per 10 minutes, 6 auction slots.</span></div>
+              <div class="rank progression"><strong>Architect</strong><span>200 hours. 50 claimed chunks, 30 force-loaded chunks, 5 Shards per 10 minutes, 8 auction slots.</span></div>
+              <div class="rank progression"><strong>Ascendant</strong><span>500 hours. 60 claimed chunks, 40 force-loaded chunks, 6 Shards per 10 minutes, 12 auction slots.</span></div>
+              <div class="rank vip"><strong>Patron</strong><span>Supporter tier. 80 claimed chunks, 50 force-loaded chunks, 7 Shards per 10 minutes, 14 auction slots.</span></div>
+              <div class="rank vip"><strong>Pillar</strong><span>Supporter tier. 90 claimed chunks, 60 force-loaded chunks, 8 Shards per 10 minutes, 18 auction slots.</span></div>
+              <div class="rank vip"><strong>Exalted</strong><span>Supporter tier. 100 claimed chunks, 70 force-loaded chunks, 10 Shards per 10 minutes, 24 auction slots.</span></div>
             </div>
+          </article>
+          <article class="card wide">
+            <h3>Rank Ladder</h3>
+            <table class="rank-table">
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Unlock</th>
+                  <th>Claims</th>
+                  <th>Force Loaded</th>
+                  <th>Shards</th>
+                  <th>Auctions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><strong>Wanderer</strong></td><td>Default</td><td>20</td><td>8</td><td>2 / 10 min</td><td>2</td></tr>
+                <tr><td><strong>Builder</strong></td><td>20 hours</td><td>30</td><td>10</td><td>3 / 10 min</td><td>4</td></tr>
+                <tr><td><strong>Artificer</strong></td><td>75 hours</td><td>40</td><td>20</td><td>4 / 10 min</td><td>6</td></tr>
+                <tr><td><strong>Architect</strong></td><td>200 hours</td><td>50</td><td>30</td><td>5 / 10 min</td><td>8</td></tr>
+                <tr><td><strong>Ascendant</strong></td><td>500 hours</td><td>60</td><td>40</td><td>6 / 10 min</td><td>12</td></tr>
+                <tr><td><strong>Patron</strong></td><td>Supporter</td><td>80</td><td>50</td><td>7 / 10 min</td><td>14</td></tr>
+                <tr><td><strong>Pillar</strong></td><td>Supporter</td><td>90</td><td>60</td><td>8 / 10 min</td><td>18</td></tr>
+                <tr><td><strong>Exalted</strong></td><td>Supporter</td><td>100</td><td>70</td><td>10 / 10 min</td><td>24</td></tr>
+              </tbody>
+            </table>
+            <p class="rank-note">Staff ranks like Warden, Overseer, Oracle, and Sovereign exist for moderation/admin work and are not advertised as player progression.</p>
+          </article>
+          <article class="card">
+            <h3>Command Unlocks</h3>
+            <ul class="pill-list">
+              <li>Wanderer: homes, back, TPA, RTP, warps</li>
+              <li>Builder: RTP distance controls, list warps, TPA here</li>
+              <li>Artificer: crafting/anvil open, trashcan, hat</li>
+              <li>Architect: nickname, near, leaderboard</li>
+              <li>Ascendant: heal, feed, ender chest, guide</li>
+            </ul>
           </article>
         </div>
       </section>
