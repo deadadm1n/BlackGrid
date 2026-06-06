@@ -61,6 +61,16 @@ wrapper update apply
 
 Wrapper updates preserve local config, `.env`, logs, state, backups, downloads, `atm11`, and update staging folders. WatchDog Helper jar updates replace the helper jar in `atm11/mods` and back up the previous jar first.
 
+## ATM11 ServerFiles Updates
+
+WatchDog can update the ATM11 server pack from the checked-in manifest at:
+
+```text
+configs/atm11-serverfiles.json
+```
+
+When that manifest points at a newer ServerFiles `file_id`, the live wrapper downloads it automatically and queues it for the next scheduled restart. The update backs up the server first, preserves the configured local folders and custom jars, validates startup, and rolls back if validation fails.
+
 ## Discord Linking
 
 WatchDog Helper exposes `/discord` in Minecraft. The player runs it in-game, then clicks the generated Discord OAuth link.

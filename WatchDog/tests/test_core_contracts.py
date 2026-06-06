@@ -7,6 +7,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
+from plugins.atm11_auto_update.plugin import WrapperPlugin as ATM11UpdatePlugin
 from plugins.auto_restart.plugin import Plugin as AutoRestartPlugin
 from plugins.discord_bot.plugin import Plugin as DiscordBotPlugin
 from plugins.auto_update.safe_extract import safe_extract_zip
@@ -38,6 +39,20 @@ class MemoryLogger:
 
     def exception(self, *args, **kwargs):
         pass
+
+
+class FakeUrlResponse:
+    def __init__(self, body):
+        self.body = body.encode("utf-8")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def read(self):
+        return self.body
 
 
 class CoreContractTests(unittest.IsolatedAsyncioTestCase):
@@ -138,6 +153,35 @@ class CoreContractTests(unittest.IsolatedAsyncioTestCase):
 
             with self.assertRaises(RuntimeError):
                 safe_extract_zip(zip_path, target)
+
+    async def test_atm11_update_reads_manifest_source(self):
+        plugin = ATM11UpdatePlugin(
+            settings={
+                "manifest_url": "https://example.invalid/atm11-serverfiles.json",
+                "curseforge_scrape_fallback": False,
+            }
+        )
+
+        manifest = json.dumps(
+            {
+                "atm11_serverfiles": {
+                    "file_id": 9999999,
+                    "display_name": "ServerFiles-0.0.99",
+                    "page_url": "https://example.invalid/files/9999999",
+                }
+            }
+        )
+
+        with patch(
+            "plugins.atm11_auto_update.plugin.urllib.request.urlopen",
+            return_value=FakeUrlResponse(manifest),
+        ):
+            latest = plugin.fetch_latest_serverfiles_sync()
+
+        self.assertEqual(latest["file_id"], 9999999)
+        self.assertEqual(latest["display_name"], "ServerFiles-0.0.99")
+        self.assertEqual(latest["source"], "manifest")
+        self.assertIn("/files/9999999/download", latest["download_url"])
 
     async def test_log_rotation_skips_locked_minecraft_logs(self):
         with tempfile.TemporaryDirectory() as tmp:

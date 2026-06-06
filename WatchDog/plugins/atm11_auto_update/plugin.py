@@ -180,6 +180,11 @@ class WrapperPlugin:
         )
 
         if file_id == installed_file_id:
+            available = self.load_available()
+
+            if available and int(available.get("file_id", 0) or 0) == file_id:
+                self.clear_available()
+
             self.ctx.logger.info("[ATM11Update] No update available")
             return
 
@@ -213,7 +218,10 @@ class WrapperPlugin:
 
         if self.settings.get("auto_download", False):
             self.ctx.logger.warning("[ATM11Update] auto_download=true; downloading update package")
-            await self.download_and_prepare(latest)
+            await self.download_and_prepare(
+                latest,
+                install_at_next_restart=self.settings.get("auto_apply_on_scheduled_restart", False),
+            )
 
     async def fetch_latest_serverfiles(self):
         return await asyncio.to_thread(self.fetch_latest_serverfiles_sync)
@@ -223,6 +231,16 @@ class WrapperPlugin:
 
         if manual_latest:
             return manual_latest
+
+        manifest_latest = self.get_manifest_serverfiles_update()
+
+        if manifest_latest:
+            return manifest_latest
+
+        if not self.settings.get("curseforge_scrape_fallback", True):
+            raise UpdateCheckUnavailable(
+                "No manual or manifest update source is configured, and CurseForge scraping fallback is disabled."
+            )
 
         request = urllib.request.Request(
             self.ATM11_FILES_URL,
@@ -357,6 +375,94 @@ class WrapperPlugin:
             "source": "manual_config",
         }
 
+    def get_manifest_serverfiles_update(self):
+        manifest_url = str(self.settings.get("manifest_url", "") or "").strip()
+
+        if not manifest_url:
+            return None
+
+        request = urllib.request.Request(
+            manifest_url,
+            headers={
+                "User-Agent": "WatchDog-ATM11-Updater",
+                "Accept": "application/json",
+            },
+        )
+
+        try:
+            with urllib.request.urlopen(request, timeout=30) as response:
+                manifest = json.loads(response.read().decode("utf-8", errors="replace"))
+        except urllib.error.HTTPError as e:
+            raise UpdateCheckUnavailable(
+                f"ATM11 update manifest returned HTTP {e.code}: {manifest_url}"
+            ) from e
+        except urllib.error.URLError as e:
+            raise UpdateCheckUnavailable(
+                f"Could not reach ATM11 update manifest: {e.reason}"
+            ) from e
+        except json.JSONDecodeError as e:
+            raise UpdateCheckUnavailable(
+                f"ATM11 update manifest is not valid JSON: {manifest_url}"
+            ) from e
+
+        if not isinstance(manifest, dict):
+            raise UpdateCheckUnavailable("ATM11 update manifest must be a JSON object")
+
+        data = manifest.get("atm11_serverfiles", manifest)
+
+        if not isinstance(data, dict):
+            raise UpdateCheckUnavailable("ATM11 update manifest entry must be a JSON object")
+
+        file_id = self.first_present(
+            data,
+            "file_id",
+            "serverfiles_file_id",
+            "atm11_serverfiles_file_id",
+        )
+
+        if file_id is None:
+            raise UpdateCheckUnavailable("ATM11 update manifest is missing file_id")
+
+        file_id = str(file_id).strip()
+
+        if not file_id.isdigit():
+            raise UpdateCheckUnavailable("ATM11 update manifest file_id must be numeric")
+
+        file_id = int(file_id)
+
+        display_name = str(
+            self.first_present(data, "display_name", "name", "title") or f"ServerFiles-{file_id}"
+        ).strip()
+        page_url = str(data.get("page_url") or "").strip()
+        download_url = str(data.get("download_url") or "").strip()
+
+        if not page_url:
+            page_url = f"https://www.curseforge.com/minecraft/modpacks/all-the-mods-11/files/{file_id}"
+
+        if not download_url:
+            download_url = (
+                f"https://www.curseforge.com/api/v1/mods/"
+                f"{self.ATM11_PROJECT_ID}/files/{file_id}/download"
+            )
+
+        return {
+            "file_id": file_id,
+            "display_name": display_name,
+            "file_name": self.safe_zip_name(display_name),
+            "page_url": page_url,
+            "download_url": download_url,
+            "source": "manifest",
+        }
+
+    def first_present(self, data, *keys):
+        for key in keys:
+            value = data.get(key)
+
+            if value not in (None, ""):
+                return value
+
+        return None
+
     def extract_file_id_from_url(self, url):
         match = re.search(r"/files/(\d+)", url)
 
@@ -408,7 +514,7 @@ class WrapperPlugin:
 
         return cleaned
 
-    async def download_and_prepare(self, latest):
+    async def download_and_prepare(self, latest, install_at_next_restart=False):
         file_id = int(latest["file_id"])
         file_name = latest["file_name"]
 
@@ -446,6 +552,12 @@ class WrapperPlugin:
         if not pack_root:
             raise RuntimeError("Could not find server pack root inside extracted zip")
 
+        pending_status = (
+            "install_at_next_restart"
+            if install_at_next_restart
+            else "downloaded_pending_manual_apply"
+        )
+
         pending = {
             "file_id": file_id,
             "file_name": file_name,
@@ -456,19 +568,29 @@ class WrapperPlugin:
             "extract_dir": str(extracted_dir),
             "pack_root": str(pack_root),
             "downloaded_at": datetime.now(timezone.utc).isoformat(),
-            "status": "downloaded_pending_manual_apply",
+            "status": pending_status,
         }
 
         self.save_pending(pending)
 
-        self.ctx.logger.warning(
-            "[ATM11Update] Update downloaded and pending manual apply: %s",
-            latest["display_name"],
-        )
-        await self.notify_discord(
-            f"[ATM11Update] Downloaded update: {latest['display_name']}. "
-            "Use `watchdog atm11 update apply` when ready."
-        )
+        if install_at_next_restart:
+            self.ctx.logger.warning(
+                "[ATM11Update] Update downloaded and queued for next scheduled restart: %s",
+                latest["display_name"],
+            )
+            await self.notify_discord(
+                f"[ATM11Update] Downloaded update: {latest['display_name']}. "
+                "It will install during the next scheduled restart."
+            )
+        else:
+            self.ctx.logger.warning(
+                "[ATM11Update] Update downloaded and pending manual apply: %s",
+                latest["display_name"],
+            )
+            await self.notify_discord(
+                f"[ATM11Update] Downloaded update: {latest['display_name']}. "
+                "Use `watchdog atm11 update apply` when ready."
+            )
 
     def download_file(self, url, path):
         tmp_path = path.with_suffix(path.suffix + ".tmp")
@@ -594,6 +716,11 @@ class WrapperPlugin:
         installed_file_id = int(state.get("installed_file_id", 0) or 0)
 
         if int(latest["file_id"]) == installed_file_id:
+            available = self.load_available()
+
+            if available and int(available.get("file_id", 0) or 0) == int(latest["file_id"]):
+                self.clear_available()
+
             return CommandResult(
                 message=f"ATM11 is already current: {latest['display_name']} ({latest['file_id']})",
                 data={"latest": latest},
@@ -766,6 +893,7 @@ class WrapperPlugin:
 
         self.save_state(state)
         self.clear_pending()
+        self.clear_available()
 
         await asyncio.to_thread(self.cleanup_old_backups)
 

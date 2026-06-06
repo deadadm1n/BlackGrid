@@ -85,7 +85,7 @@ web_panel:
 plugins:
   # ATM11 server pack updater.
   atm11_auto_update:
-    enabled: false
+    enabled: true
     server_dir: "atm11"
     update_dir: "updates/atm11"
     backup_dir: "backups/atm11_updates"
@@ -95,10 +95,21 @@ plugins:
     initial_check_delay_seconds: 60
 
     # Download behavior.
-    auto_download: false
+    auto_download: true
+    auto_apply_on_scheduled_restart: true
+    manifest_url: "https://raw.githubusercontent.com/deadadm1n/BlackGrid/main/configs/atm11-serverfiles.json"
+    curseforge_scrape_fallback: false
     postpone_failed_file_ids: true
     keep_backups_days: 7
     notify_discord: false
+
+    # Optional manual override.
+    # Leave blank for manifest checks. Set manual_file_id or manual_download_url
+    # to force the updater to use a known ServerFiles release.
+    manual_file_id: ""
+    manual_display_name: ""
+    manual_page_url: ""
+    manual_download_url: ""
 
     # Folders replaced by pack updates.
     replace_dirs:
@@ -119,10 +130,16 @@ plugins:
     preserve_custom_mods:
       - "watchdog_helper-*.jar"
       - "watchdog_helper.jar"
+      - "aetherreachcore-*.jar"
+      - "worldedit-mod-7.4.3.jar"
 
     # Paths preserved during updates.
     preserve_paths:
+      - "aetherreach"
       - "config/watchdog_helper-common.toml"
+      - "config/aetherreachcore-common.toml"
+      - "world/serverconfig/ftbranks"
+      - "config/worldedit"
 
   # Crash and schedule restarts.
   auto_restart:
