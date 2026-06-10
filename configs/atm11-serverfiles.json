@@ -1,16 +1,16 @@
 {
   "atm11_serverfiles": {
-    "file_id": 8211811,
-    "display_name": "ServerFiles-0.0.24.zip Latest release R 26.1.2 NeoForge Jun 7, 2026",
-    "page_url": "https://www.curseforge.com/minecraft/modpacks/all-the-mods-11/files/8211811",
-    "download_url": "https://www.curseforge.com/api/v1/mods/1148445/files/8211811/download",
-    "discovered_at": "2026-06-08T13:46:29.052196+00:00",
-    "previous_file_id": 8189300,
+    "file_id": 8225077,
+    "display_name": "ServerFiles-0.1.0.zip Latest release R 26.1.2 NeoForge Jun 10, 2026",
+    "page_url": "https://www.curseforge.com/minecraft/modpacks/all-the-mods-11/files/8225077",
+    "download_url": "https://www.curseforge.com/api/v1/mods/1148445/files/8225077/download",
+    "discovered_at": "2026-06-10T13:33:02.911176+00:00",
+    "previous_file_id": 8211811,
     "source": "curseforge_files_page",
-    "metadata_source_url": "https://r.jina.ai/http://https://www.curseforge.com/minecraft/modpacks/all-the-mods-11/files/all",
-    "changelog_file_id": 8211808,
-    "changelog_url": "https://www.curseforge.com/minecraft/modpacks/all-the-mods-11/files/8211808/changelog",
-    "changelog_source_url": "https://r.jina.ai/http://https://www.curseforge.com/minecraft/modpacks/all-the-mods-11/files/8211808/changelog",
+    "metadata_source_url": "https://www.curseforge.com/minecraft/modpacks/all-the-mods-11/files/all",
+    "changelog_file_id": null,
+    "changelog_url": null,
+    "changelog_source_url": null,
     "changelog": null
   }
 }
