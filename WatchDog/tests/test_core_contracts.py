@@ -2,6 +2,7 @@ import asyncio
 import json
 import tempfile
 import unittest
+import urllib.error
 import zipfile
 from pathlib import Path
 from types import SimpleNamespace
@@ -158,6 +159,7 @@ class CoreContractTests(unittest.IsolatedAsyncioTestCase):
         plugin = ATM11UpdatePlugin(
             settings={
                 "manifest_url": "https://example.invalid/atm11-serverfiles.json",
+                "curseforge_api_enabled": False,
                 "curseforge_scrape_fallback": False,
             }
         )
@@ -182,6 +184,90 @@ class CoreContractTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(latest["display_name"], "ServerFiles-0.0.99")
         self.assertEqual(latest["source"], "manifest")
         self.assertIn("/files/9999999/download", latest["download_url"])
+
+    async def test_atm11_update_falls_back_when_manifest_is_unavailable(self):
+        plugin = ATM11UpdatePlugin(
+            settings={
+                "manifest_url": "https://example.invalid/atm11-serverfiles.json",
+                "curseforge_api_enabled": False,
+                "curseforge_scrape_fallback": True,
+            }
+        )
+
+        html = (
+            '<a href="/minecraft/modpacks/all-the-mods-11/files/9999998">'
+            "ServerFiles-0.0.98.zip</a>"
+        )
+        manifest_error = urllib.error.HTTPError(
+            "https://example.invalid/atm11-serverfiles.json",
+            404,
+            "Not Found",
+            {},
+            None,
+        )
+
+        with patch(
+            "plugins.atm11_auto_update.plugin.urllib.request.urlopen",
+            side_effect=[manifest_error, FakeUrlResponse(html)],
+        ):
+            latest = plugin.fetch_latest_serverfiles_sync()
+
+        self.assertEqual(latest["file_id"], 9999998)
+        self.assertEqual(latest["display_name"], "ServerFiles-0.0.98.zip")
+
+    async def test_atm11_update_prefers_newer_manifest_over_stale_api(self):
+        plugin = ATM11UpdatePlugin(
+            settings={
+                "manifest_url": "https://example.invalid/atm11-serverfiles.json",
+                "curseforge_scrape_fallback": False,
+            }
+        )
+
+        api_files = json.dumps(
+            {
+                "data": [
+                    {
+                        "id": 1111111,
+                        "hasServerPack": True,
+                        "additionalServerPackFilesCount": 1,
+                    }
+                ]
+            }
+        )
+        api_additional_files = json.dumps(
+            {
+                "data": [
+                    {
+                        "id": 9999998,
+                        "displayName": "ServerFiles-0.0.98.zip",
+                        "fileName": "ServerFiles-0.0.98.zip",
+                    }
+                ]
+            }
+        )
+        manifest = json.dumps(
+            {
+                "atm11_serverfiles": {
+                    "file_id": 9999999,
+                    "display_name": "ServerFiles-0.0.99.zip",
+                    "page_url": "https://example.invalid/files/9999999",
+                }
+            }
+        )
+
+        with patch(
+            "plugins.atm11_auto_update.plugin.urllib.request.urlopen",
+            side_effect=[
+                FakeUrlResponse(api_files),
+                FakeUrlResponse(api_additional_files),
+                FakeUrlResponse(manifest),
+            ],
+        ):
+            latest = plugin.fetch_latest_serverfiles_sync()
+
+        self.assertEqual(latest["file_id"], 9999999)
+        self.assertEqual(latest["display_name"], "ServerFiles-0.0.99.zip")
+        self.assertEqual(latest["source"], "manifest")
 
     async def test_log_rotation_skips_locked_minecraft_logs(self):
         with tempfile.TemporaryDirectory() as tmp:

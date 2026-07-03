@@ -24,6 +24,10 @@ class WrapperPlugin:
 
     ATM11_FILES_URL = "https://www.curseforge.com/minecraft/modpacks/all-the-mods-11/files/all"
     ATM11_PROJECT_ID = 1148445
+    ATM11_FILES_API_URL = (
+        f"https://www.curseforge.com/api/v1/mods/{ATM11_PROJECT_ID}/files"
+        "?pageIndex=0&pageSize=50&sort=dateCreated&sortDescending=true"
+    )
 
     def __init__(self, settings=None):
         self.settings = settings or {}
@@ -44,6 +48,7 @@ class WrapperPlugin:
 
         self.running = True
         self.task = asyncio.create_task(self.check_loop())
+        asyncio.create_task(self.catch_up_update_notifications())
 
         self.ctx.logger.info(
             "[ATM11Update] Enabled. Checking every %s minutes.",
@@ -67,6 +72,20 @@ class WrapperPlugin:
             "Show Minecraft pack update status",
             owner=self.name,
             usage="watchdog minecraft update status",
+        )
+        registry.register(
+            "atm11 update changelog",
+            self.cmd_changelog,
+            "Post the installed ATM11 changelog to Discord",
+            owner=self.name,
+            usage="watchdog atm11 update changelog",
+        )
+        registry.register(
+            "minecraft update changelog",
+            self.cmd_changelog,
+            "Post the installed Minecraft pack changelog to Discord",
+            owner=self.name,
+            usage="watchdog minecraft update changelog",
         )
         registry.register(
             "atm11 update check",
@@ -109,6 +128,20 @@ class WrapperPlugin:
             "Stop Minecraft, install the downloaded pack update, validate startup, and rollback on failure",
             owner=self.name,
             usage="watchdog minecraft update apply",
+        )
+        registry.register(
+            "atm11 update install",
+            self.cmd_install_latest,
+            "Download and install the latest ATM11 ServerFiles update",
+            owner=self.name,
+            usage="watchdog atm11 update install [force]",
+        )
+        registry.register(
+            "minecraft update install",
+            self.cmd_install_latest,
+            "Download and install the latest Minecraft ServerFiles update",
+            owner=self.name,
+            usage="watchdog minecraft update install [force]",
         )
         registry.register(
             "atm11 update clear",
@@ -232,14 +265,40 @@ class WrapperPlugin:
         if manual_latest:
             return manual_latest
 
-        manifest_latest = self.get_manifest_serverfiles_update()
+        api_error = None
+        manifest_error = None
+        candidates = []
 
-        if manifest_latest:
-            return manifest_latest
+        try:
+            api_latest = self.get_curseforge_api_serverfiles_update()
+        except UpdateCheckUnavailable as e:
+            api_error = e
+        else:
+            if api_latest:
+                candidates.append(api_latest)
+
+        try:
+            manifest_latest = self.get_manifest_serverfiles_update()
+        except UpdateCheckUnavailable as e:
+            manifest_error = e
+            if self.ctx:
+                self.ctx.logger.warning("[ATM11Update] Manifest source unavailable: %s", e)
+        else:
+            if manifest_latest:
+                candidates.append(manifest_latest)
+
+        if candidates:
+            return max(candidates, key=lambda item: int(item.get("file_id", 0) or 0))
 
         if not self.settings.get("curseforge_scrape_fallback", True):
+            if api_error:
+                raise UpdateCheckUnavailable(str(api_error)) from api_error
+
+            if manifest_error:
+                raise UpdateCheckUnavailable(str(manifest_error)) from manifest_error
+
             raise UpdateCheckUnavailable(
-                "No manual or manifest update source is configured, and CurseForge scraping fallback is disabled."
+                "No manual, CurseForge API, or manifest update source is configured, and CurseForge scraping fallback is disabled."
             )
 
         request = urllib.request.Request(
@@ -332,6 +391,107 @@ class WrapperPlugin:
         # File IDs increase over time. Highest ID should be newest.
         matches.sort(key=lambda item: item["file_id"], reverse=True)
         return matches[0]
+
+    def get_curseforge_api_serverfiles_update(self):
+        if not self.settings.get("curseforge_api_enabled", True):
+            return None
+
+        files_payload = self.fetch_json(
+            self.ATM11_FILES_API_URL,
+            "CurseForge API file list",
+        )
+        files = files_payload.get("data") if isinstance(files_payload, dict) else None
+
+        if not isinstance(files, list):
+            raise UpdateCheckUnavailable("CurseForge API file list is missing data")
+
+        for pack_file in files:
+            if not isinstance(pack_file, dict):
+                continue
+
+            if not pack_file.get("hasServerPack") and not pack_file.get("additionalServerPackFilesCount"):
+                continue
+
+            pack_file_id = pack_file.get("id")
+
+            if not pack_file_id:
+                continue
+
+            additional_url = (
+                f"https://www.curseforge.com/api/v1/mods/"
+                f"{self.ATM11_PROJECT_ID}/files/{pack_file_id}/additional-files"
+            )
+            additional_payload = self.fetch_json(
+                additional_url,
+                "CurseForge API additional files",
+            )
+            additional_files = (
+                additional_payload.get("data")
+                if isinstance(additional_payload, dict)
+                else None
+            )
+
+            if not isinstance(additional_files, list):
+                continue
+
+            for server_file in additional_files:
+                if not isinstance(server_file, dict):
+                    continue
+
+                file_id = server_file.get("id")
+                display_name = str(
+                    server_file.get("displayName")
+                    or server_file.get("fileName")
+                    or f"ServerFiles-{file_id}"
+                ).strip()
+
+                if not file_id:
+                    continue
+
+                if "serverfiles" not in display_name.lower() and "server files" not in display_name.lower():
+                    continue
+
+                return {
+                    "file_id": int(file_id),
+                    "display_name": display_name,
+                    "file_name": str(server_file.get("fileName") or self.safe_zip_name(display_name)),
+                    "page_url": (
+                        "https://www.curseforge.com/minecraft/modpacks/"
+                        f"all-the-mods-11/files/{file_id}"
+                    ),
+                    "download_url": (
+                        f"https://www.curseforge.com/api/v1/mods/"
+                        f"{self.ATM11_PROJECT_ID}/files/{file_id}/download"
+                    ),
+                    "changelog_file_id": int(pack_file_id),
+                    "changelog_url": (
+                        "https://www.curseforge.com/minecraft/modpacks/"
+                        f"all-the-mods-11/files/{pack_file_id}/changelog"
+                    ),
+                    "source": "curseforge_api",
+                }
+
+        raise UpdateCheckUnavailable("Could not find an ATM11 ServerFiles entry in the CurseForge API")
+
+    def fetch_json(self, url, description):
+        request = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": "Mozilla/5.0 Watchdog-ATM11-Updater",
+                "Accept": "application/json,text/plain,*/*",
+                "Accept-Language": "en-US,en;q=0.9",
+            },
+        )
+
+        try:
+            with urllib.request.urlopen(request, timeout=30) as response:
+                return json.loads(response.read().decode("utf-8", errors="replace"))
+        except urllib.error.HTTPError as e:
+            raise UpdateCheckUnavailable(f"{description} returned HTTP {e.code}") from e
+        except urllib.error.URLError as e:
+            raise UpdateCheckUnavailable(f"Could not reach {description}: {e.reason}") from e
+        except json.JSONDecodeError as e:
+            raise UpdateCheckUnavailable(f"{description} returned invalid JSON") from e
 
     def get_manual_serverfiles_update(self):
         manual_download_url = str(self.settings.get("manual_download_url", "") or "").strip()
@@ -687,6 +847,7 @@ class WrapperPlugin:
             )
             return
 
+        await self.announce_update_apply(pending)
         await self.install_pending_update(pending)
 
     async def cmd_status(self, args):
@@ -715,6 +876,15 @@ class WrapperPlugin:
                 "pending": pending or {},
             },
         )
+
+    async def cmd_changelog(self, args):
+        state = self.load_state()
+        posted = await self.notify_changelog_channel(state)
+
+        if not posted:
+            return CommandResult(ok=False, message="No changelog text was available to post.")
+
+        return CommandResult(message="Posted installed ATM11 changelog to Discord.")
 
     async def cmd_check(self, args):
         try:
@@ -813,6 +983,7 @@ class WrapperPlugin:
 
         try:
             if was_running:
+                await self.announce_update_apply(pending)
                 self.ctx.server_stop_requested = True
                 await server.stop()
                 self.ctx.server_stop_requested = False
@@ -875,6 +1046,93 @@ class WrapperPlugin:
             self.ctx.server_stop_requested = False
             self.applying = False
 
+    async def announce_update_apply(self, pending):
+        if not self.settings.get("announce_before_apply", True):
+            return
+
+        delay_seconds = int(self.settings.get("update_announcement_delay_seconds", 300) or 0)
+
+        if delay_seconds <= 0:
+            return
+
+        server = getattr(self.ctx, "server_process", None)
+        process = getattr(server, "process", None) if server else None
+
+        if not server or not process or process.returncode is not None:
+            return
+
+        minutes = max(1, round(delay_seconds / 60))
+        display_name = str(pending.get("display_name") or "the server update")
+        message = (
+            f"Server update {display_name} will start in {minutes} minute"
+            f"{'' if minutes == 1 else 's'}. Please get somewhere safe."
+        )
+
+        self.ctx.logger.warning("[ATM11Update] Announcing update delay: %s", message)
+        await server.send_command(f"say {message}")
+        await self.notify_discord(f"[ATM11Update] {message}")
+
+        if delay_seconds > 60:
+            await asyncio.sleep(delay_seconds - 60)
+            reminder = "Server update starts in 1 minute. Please get somewhere safe."
+            self.ctx.logger.warning("[ATM11Update] Announcing update reminder: %s", reminder)
+            await server.send_command(f"say {reminder}")
+            await self.notify_discord(f"[ATM11Update] {reminder}")
+            await asyncio.sleep(60)
+        else:
+            await asyncio.sleep(delay_seconds)
+
+    async def cmd_install_latest(self, args):
+        force = any(str(arg).lower() in {"force", "--force"} for arg in args)
+
+        if self.applying:
+            return CommandResult(ok=False, message="An ATM11 update is already running.")
+
+        try:
+            latest = await self.fetch_latest_serverfiles()
+        except UpdateCheckUnavailable as e:
+            return CommandResult(ok=False, message=str(e))
+
+        state = self.load_state()
+        latest_file_id = int(latest["file_id"])
+        installed_file_id = int(state.get("installed_file_id", 0) or 0)
+
+        if latest_file_id == installed_file_id and not force:
+            return CommandResult(
+                message=(
+                    f"ATM11 is already current: {latest['display_name']} ({latest_file_id}). "
+                    "Use `watchdog atm11 update install force` to reinstall it."
+                ),
+                data={"latest": latest},
+            )
+
+        pending = self.load_pending()
+
+        if pending and pending.get("status") in {"installing", "installed_waiting_for_boot_validation"}:
+            return CommandResult(
+                ok=False,
+                message=(
+                    "An ATM11 update is already in progress or waiting for validation. "
+                    "Inspect pending.json or run watchdog atm11 update status."
+                ),
+                data={"pending": pending},
+            )
+
+        self.save_available({
+            **latest,
+            "detected_at": datetime.now(timezone.utc).isoformat(),
+            "status": "available_install_requested",
+        })
+
+        if not pending or int(pending.get("file_id", 0) or 0) != latest_file_id or force:
+            self.ctx.logger.warning(
+                "[ATM11Update] One-shot install downloading latest ServerFiles: %s",
+                latest["display_name"],
+            )
+            await self.download_and_prepare(latest)
+
+        return await self.cmd_apply(args)
+
     async def cmd_clear(self, args):
         self.clear_available()
         self.clear_pending()
@@ -917,8 +1175,7 @@ class WrapperPlugin:
             "[ATM11Update] Update confirmed successful: %s",
             state["installed_display_name"],
         )
-        await self.notify_version_channel(state)
-        await self.notify_changelog_channel(state)
+        await self.notify_installed_update_channels(state)
 
     # Called by auto_restart plugin after updated server fails startup validation.
     async def after_scheduled_restart_failed(self, ctx=None):
@@ -1308,22 +1565,22 @@ class WrapperPlugin:
         channel_id = int(self.settings.get("version_channel_id", 0) or 0)
 
         if not channel_id:
-            return
+            return False
 
         plugin_loader = getattr(self.ctx, "plugin_loader", None)
 
         if not plugin_loader:
-            return
+            return False
 
         discord_plugin = plugin_loader.plugins.get("discord_bot")
 
         if not discord_plugin:
-            return
+            return False
 
         send_discord = getattr(discord_plugin, "send_discord", None)
 
         if not callable(send_discord):
-            return
+            return False
 
         display_name = state.get("installed_display_name") or state.get("installed_file_name") or "unknown"
         file_id = state.get("installed_file_id") or "unknown"
@@ -1333,23 +1590,79 @@ class WrapperPlugin:
             f"ServerFiles file id: `{file_id}`"
         )
 
-        await send_discord(message, channel_id=channel_id)
+        return bool(await send_discord(message, channel_id=channel_id))
+
+    async def notify_installed_update_channels(self, state, *, force=False):
+        file_id = int(state.get("installed_file_id", 0) or 0)
+
+        if not file_id:
+            return False
+
+        sent_any = False
+        version_sent = int(state.get("version_notified_file_id", 0) or 0) == file_id
+        changelog_sent = int(state.get("changelog_notified_file_id", 0) or 0) == file_id
+
+        if force or not version_sent:
+            if await self.notify_version_channel(state):
+                state["version_notified_file_id"] = file_id
+                state["version_notified_at"] = datetime.now(timezone.utc).isoformat()
+                sent_any = True
+
+        if force or not changelog_sent:
+            if await self.notify_changelog_channel(state):
+                refreshed_state = self.load_state()
+                refreshed_state["changelog_notified_file_id"] = file_id
+                refreshed_state["changelog_notified_at"] = datetime.now(timezone.utc).isoformat()
+
+                for key, value in state.items():
+                    refreshed_state.setdefault(key, value)
+
+                state = refreshed_state
+                sent_any = True
+
+        self.save_state(state)
+        return sent_any
+
+    async def catch_up_update_notifications(self):
+        delay = int(self.settings.get("notification_catchup_delay_seconds", 30) or 0)
+        await asyncio.sleep(max(delay, 0))
+
+        if not self.running:
+            return
+
+        state = self.load_state()
+        file_id = int(state.get("installed_file_id", 0) or 0)
+
+        if not file_id:
+            return
+
+        version_sent = int(state.get("version_notified_file_id", 0) or 0) == file_id
+        changelog_sent = int(state.get("changelog_notified_file_id", 0) or 0) == file_id
+
+        if version_sent and changelog_sent:
+            return
+
+        self.ctx.logger.warning("[ATM11Update] Catching up missed update Discord notification(s)")
+        await self.notify_installed_update_channels(state)
 
     async def notify_changelog_channel(self, state):
         channel_id = int(self.settings.get("changelog_channel_id", 0) or 0)
 
         if not channel_id:
-            return
+            return False
 
         changelog = self.format_discord_changelog(state.get("changelog"))
 
         if not changelog:
-            return
+            changelog = await asyncio.to_thread(self.fetch_changelog_for_state, state)
+
+        if not changelog:
+            return False
 
         send_discord = self.get_discord_sender()
 
         if not callable(send_discord):
-            return
+            return False
 
         display_name = state.get("installed_display_name") or state.get("installed_file_name") or "unknown"
         message = f"**All the Mods 11 changelog:** `{display_name}`"
@@ -1357,7 +1670,61 @@ class WrapperPlugin:
         if changelog:
             message += f"\n\n{changelog}"
 
-        await send_discord(message, channel_id=channel_id)
+        return bool(await send_discord(message, channel_id=channel_id))
+
+    def fetch_changelog_for_state(self, state):
+        file_id = state.get("changelog_file_id")
+
+        if not file_id:
+            return ""
+
+        try:
+            file_id = int(file_id)
+        except (TypeError, ValueError):
+            return ""
+
+        url = f"https://www.curseforge.com/api/v1/mods/{self.ATM11_PROJECT_ID}/files/{file_id}/change-log"
+
+        try:
+            payload = self.fetch_json(url, "CurseForge API changelog")
+        except UpdateCheckUnavailable as e:
+            self.ctx.logger.warning("[ATM11Update] Could not fetch changelog: %s", e)
+            return ""
+
+        body = ""
+
+        if isinstance(payload, dict):
+            body = str(payload.get("changelogBody") or payload.get("data") or "")
+
+        changelog = self.html_changelog_to_text(body)
+        formatted = self.format_discord_changelog(changelog)
+
+        if formatted:
+            current = self.load_state()
+            current["changelog"] = changelog
+            current["changelog_source_url"] = url
+            self.save_state(current)
+
+        return formatted
+
+    def html_changelog_to_text(self, html):
+        if not html:
+            return ""
+
+        text = str(html)
+        text = re.sub(r"</li>\s*<li>", "\n* ", text, flags=re.IGNORECASE)
+        text = re.sub(r"<li>", "* ", text, flags=re.IGNORECASE)
+        text = re.sub(r"</li>", "", text, flags=re.IGNORECASE)
+        text = re.sub(r"</p>\s*<p>", "\n\n", text, flags=re.IGNORECASE)
+        text = re.sub(r"</?(ul|ol)>", "", text, flags=re.IGNORECASE)
+        text = re.sub(r"<br\s*/?>", "\n", text, flags=re.IGNORECASE)
+        text = re.sub(r"</?(strong|b)>", "**", text, flags=re.IGNORECASE)
+        text = re.sub(r"</?(em|i)>", "_", text, flags=re.IGNORECASE)
+        text = re.sub(r"<[^>]+>", " ", text)
+        text = unescape(text)
+        text = "\n".join(re.sub(r"[ \t]+", " ", line).strip() for line in text.splitlines())
+        text = re.sub(r"\n{3,}", "\n\n", text)
+        return text.strip()
 
     def get_discord_sender(self):
         plugin_loader = getattr(self.ctx, "plugin_loader", None)

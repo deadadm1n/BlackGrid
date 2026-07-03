@@ -97,8 +97,8 @@ plugins:
     # Download behavior.
     auto_download: true
     auto_apply_on_scheduled_restart: true
-    manifest_url: "https://raw.githubusercontent.com/deadadm1n/BlackGrid/main/configs/atm11-serverfiles.json"
-    curseforge_scrape_fallback: false
+    manifest_url: "file:///home/deadadm1n/WatchDog/configs/atm11-serverfiles.json"
+    curseforge_scrape_fallback: true
     postpone_failed_file_ids: true
     keep_backups_days: 7
     notify_discord: false
