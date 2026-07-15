@@ -1,16 +1,16 @@
 {
   "atm11_serverfiles": {
-    "file_id": 8357756,
-    "display_name": "ServerFiles-0.2.0.zip",
-    "page_url": "https://www.curseforge.com/minecraft/modpacks/all-the-mods-11/files/8357756",
-    "download_url": "https://www.curseforge.com/api/v1/mods/1148445/files/8357756/download",
-    "discovered_at": "2026-07-03T16:31:16+00:00",
-    "previous_file_id": 8304510,
-    "source": "curseforge_additional_files",
-    "metadata_source_url": "https://www.curseforge.com/minecraft/modpacks/all-the-mods-11/files/8357747/additional-files",
-    "changelog_file_id": 8357747,
-    "changelog_url": "https://www.curseforge.com/minecraft/modpacks/all-the-mods-11/files/8357747/changelog",
-    "changelog_source_url": null,
-    "changelog": null
+    "file_id": 8431883,
+    "display_name": "ServerFiles-0.2.1.zip Latest release R Jul 14, 2026",
+    "page_url": "https://www.curseforge.com/minecraft/modpacks/all-the-mods-11/files/8431883",
+    "download_url": "https://www.curseforge.com/api/v1/mods/1148445/files/8431883/download",
+    "discovered_at": "2026-07-15T06:27:27.849207+00:00",
+    "previous_file_id": 8357756,
+    "source": "curseforge_files_page",
+    "metadata_source_url": "https://r.jina.ai/http://https://www.curseforge.com/minecraft/modpacks/all-the-mods-11/files/all",
+    "changelog_file_id": 8431787,
+    "changelog_url": "https://www.curseforge.com/minecraft/modpacks/all-the-mods-11/files/8431787/changelog",
+    "changelog_source_url": "https://r.jina.ai/http://https://www.curseforge.com/minecraft/modpacks/all-the-mods-11/files/8431787/changelog",
+    "changelog": "**Quests added are WIP/placeholders, still has ATM10 references and will be modified as mods are introduced**\n\n**Added:**\n\n*   Item Collectors\n*   Nullscape\n*   Pipe Connector\n*   Refined Types\n*   Simple Magnets\n*   Trash Cans\n\n**Others:**\n\n*   New Chapter 1 (ToshibaEC0Microwave)\n*   Make Crystalline Infusion Altar Blocks Ritual Satchel Compatible (DivineFinal)\n*   Apotheosis Quest Changes (DivineFinal)\n\n**Updated All the Mods\\ Neoforge Version is 26.1.2.78**\n\n**ALWAYS REMEMBER TO BACKUP BEFORE UPDATING**"
   }
 }
