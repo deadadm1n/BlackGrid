@@ -13,12 +13,24 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
 import java.nio.file.Path;
 
+/**
+ * In-game admin commands for the Discord chat bridge.
+ *
+ * These are not player commands. They require gamemaster permission.
+ *
+ * Useful commands:
+ * /watchdog discord status  - show what the bridge thinks its config is
+ * /watchdog discord reload  - reload WatchDog/discord-chat.json without restarting Minecraft
+ * /watchdogdiscord status   - same status command, shorter cursed alias
+ * /watchdogdiscord reload   - same reload command, shorter cursed alias
+ */
 public class DiscordChatBridgeCommands {
 
     @SubscribeEvent
     public void onRegisterCommands(RegisterCommandsEvent event) {
         CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
 
+        // Direct command alias. Easy to type when debugging the bridge.
         dispatcher.register(
                 Commands.literal("watchdogdiscord")
                         .requires(Commands.hasPermission(new PermissionCheck.Require(Permissions.COMMANDS_GAMEMASTER)))
@@ -29,6 +41,7 @@ public class DiscordChatBridgeCommands {
                                 .executes(ctx -> reload(ctx.getSource())))
         );
 
+        // Nested command style that fits the rest of WatchDog.
         dispatcher.register(
                 Commands.literal("watchdog")
                         .requires(Commands.hasPermission(new PermissionCheck.Require(Permissions.COMMANDS_GAMEMASTER)))
@@ -45,6 +58,7 @@ public class DiscordChatBridgeCommands {
         DiscordChatBridgeConfig.Settings settings = DiscordChatBridgeConfig.get();
         Path path = DiscordChatBridgeConfig.path();
 
+        // Keep this output boring and useful. This is for debugging config mistakes.
         source.sendSuccess(() -> header("WatchDog Discord chat bridge"), false);
         source.sendSuccess(() -> line("Config", path == null ? "not loaded yet" : path.toString()), false);
         source.sendSuccess(() -> line("Enabled", String.valueOf(settings.enabled)), false);
@@ -59,8 +73,11 @@ public class DiscordChatBridgeCommands {
 
     private static int reload(CommandSourceStack source) {
         MinecraftServer server = source.getServer();
+
+        // Re-read the JSON file, then restart the little HTTP listener so host/port/path changes apply.
         DiscordChatBridgeConfig.reload(server);
         BridgeService.restart(server);
+
         source.sendSuccess(() -> Component.literal("WatchDog Discord chat bridge config reloaded.")
                 .withStyle(ChatFormatting.GREEN), true);
         return 1;
