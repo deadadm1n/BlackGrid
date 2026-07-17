@@ -3,19 +3,78 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import socket
 import stat
+import subprocess
 import urllib.request
 import zipfile
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent
 WATCHDOG_SOURCE = REPO_ROOT / "WatchDog"
 ATM11_MANIFEST = REPO_ROOT / "configs" / "atm11-serverfiles.json"
+DEFAULT_MINECRAFT_PORT = 25565
+DEFAULT_WEB_PANEL_PORT = 8080
+DEFAULT_EVENT_RECEIVER_PORT = 25591
 
 
 class BlackGridError(RuntimeError):
     pass
+
+
+@dataclass
+class Check:
+    level: str
+    message: str
+    detail: str = ""
+
+
+class PreflightReport:
+    def __init__(self, title: str):
+        self.title = title
+        self.checks: list[Check] = []
+        self.safe_to_start = True
+
+    def ok(self, message: str, detail: str = "") -> None:
+        self.checks.append(Check("OK", message, detail))
+
+    def info(self, message: str, detail: str = "") -> None:
+        self.checks.append(Check("INFO", message, detail))
+
+    def warn(self, message: str, detail: str = "", *, blocks_start: bool = False) -> None:
+        self.checks.append(Check("WARN", message, detail))
+        if blocks_start:
+            self.safe_to_start = False
+
+    def fail(self, message: str, detail: str = "") -> None:
+        self.checks.append(Check("FAIL", message, detail))
+        self.safe_to_start = False
+
+    @property
+    def has_failures(self) -> bool:
+        return any(check.level == "FAIL" for check in self.checks)
+
+    @property
+    def has_warnings(self) -> bool:
+        return any(check.level == "WARN" for check in self.checks)
+
+    def print(self) -> None:
+        print(f"\n{self.title}")
+        print("-" * len(self.title))
+        for check in self.checks:
+            print(f"[{check.level}] {check.message}")
+            if check.detail:
+                for line in check.detail.splitlines():
+                    print(f"     {line}")
+        print()
+        if self.has_failures:
+            print("Result: hard fail. BlackGrid will not generate this install yet.")
+        elif self.safe_to_start:
+            print("Result: safe to generate. Looks safe to start later.")
+        else:
+            print("Result: safe to generate. Not safe to start until the warnings are handled.")
 
 
 def main() -> int:
@@ -93,9 +152,11 @@ def create_new_atm11_server() -> None:
             str(Path.cwd() / "BlackGridServers" / server_name),
         )
     )
-    ensure_empty_or_confirm(install_root)
 
     manifest = load_atm11_manifest()
+    report = run_new_atm11_preflight(install_root, manifest)
+    confirm_preflight(report)
+
     server_dir = install_root / "server"
     watchdog_dir = install_root / "watchdog"
     downloads_dir = install_root / "downloads"
@@ -132,7 +193,14 @@ def create_new_atm11_server() -> None:
     else:
         print("Skipped EULA. The server will not fully start until eula.txt is accepted.")
 
-    write_watchdog_config(watchdog_dir, install_root, server_dir, manifest_path, server_name)
+    write_watchdog_config(
+        watchdog_dir=watchdog_dir,
+        install_root=install_root,
+        server_dir=server_dir,
+        manifest_path=manifest_path,
+        server_name=server_name,
+        enable_atm11_updates=True,
+    )
     seed_atm11_update_state(install_root, manifest)
     write_start_scripts(install_root)
     print_done(install_root, server_name)
@@ -144,9 +212,6 @@ def wrap_existing_atm11_server() -> None:
     print()
 
     existing_server = resolve_user_path(ask("Path to the existing ATM11 server folder"))
-    if not existing_server.is_dir():
-        raise BlackGridError(f"Existing server folder was not found: {existing_server}")
-
     server_name = slugify(ask("Server name", existing_server.name or "aetherreach"))
     install_root = resolve_user_path(
         ask(
@@ -154,9 +219,11 @@ def wrap_existing_atm11_server() -> None:
             str(existing_server.parent / f"{server_name}-watchdog"),
         )
     )
-    ensure_empty_or_confirm(install_root)
 
     manifest = load_atm11_manifest()
+    report = run_wrap_existing_preflight(existing_server, install_root, manifest)
+    confirm_preflight(report)
+
     watchdog_dir = install_root / "watchdog"
     manifests_dir = install_root / "manifests"
     manifests_dir.mkdir(parents=True, exist_ok=True)
@@ -165,9 +232,267 @@ def wrap_existing_atm11_server() -> None:
     copy_watchdog(watchdog_dir)
 
     manifest_path = write_detached_manifest(manifests_dir, manifest)
-    write_watchdog_config(watchdog_dir, install_root, existing_server, manifest_path, server_name)
+    write_watchdog_config(
+        watchdog_dir=watchdog_dir,
+        install_root=install_root,
+        server_dir=existing_server,
+        manifest_path=manifest_path,
+        server_name=server_name,
+        enable_atm11_updates=False,
+    )
     write_start_scripts(install_root)
     print_done(install_root, server_name)
+
+
+def confirm_preflight(report: PreflightReport) -> None:
+    report.print()
+    if report.has_failures:
+        raise BlackGridError("Preflight failed. Fix the FAIL items first.")
+    if report.has_warnings and not yes_no("Continue with these warnings?", False):
+        raise BlackGridError("Cancelled after preflight warnings.")
+
+
+def run_new_atm11_preflight(install_root: Path, manifest: dict) -> PreflightReport:
+    report = PreflightReport("BlackGrid preflight: create new ATM11 server")
+    check_install_root_safety(report, install_root)
+    check_manifest(report, manifest)
+
+    if install_root.exists() and any(visible_children(install_root)):
+        report.warn(
+            "Target folder is not empty.",
+            "BlackGrid may overwrite generated folders like watchdog/, server/, downloads/, manifests/, logs/, state/, backups/, tmp/, and updates/.",
+        )
+    else:
+        report.ok("Target folder is empty or does not exist.")
+
+    planned_ports = {"minecraft.server-port": DEFAULT_MINECRAFT_PORT}
+    check_duplicate_ports(report, planned_ports)
+    check_port_bind(report, DEFAULT_MINECRAFT_PORT, "Minecraft server-port", wrap_mode=False)
+    report.info("WatchDog web panel is generated disabled by default.", f"Default web panel port if enabled later: {DEFAULT_WEB_PANEL_PORT}")
+    report.info("Minecraft event receiver is generated disabled by default.", f"Default event receiver port if enabled later: {DEFAULT_EVENT_RECEIVER_PORT}")
+    return report
+
+
+def run_wrap_existing_preflight(server_dir: Path, install_root: Path, manifest: dict) -> PreflightReport:
+    report = PreflightReport("BlackGrid preflight: wrap existing ATM11 server")
+    check_manifest(report, manifest)
+    check_install_root_safety(report, install_root)
+
+    if not server_dir.is_dir():
+        report.fail("Existing server folder does not exist.", str(server_dir))
+        return report
+
+    report.ok("Existing server folder exists.", str(server_dir))
+    check_path_separation(report, server_dir, install_root)
+
+    props = read_server_properties(server_dir / "server.properties")
+    if props:
+        report.ok("Found server.properties.")
+    else:
+        report.warn("server.properties is missing or unreadable.", "Using default Minecraft port assumptions.")
+
+    enabled_ports = minecraft_ports_from_properties(props)
+    check_duplicate_ports(report, enabled_ports)
+    for label, port in enabled_ports.items():
+        check_port_bind(report, port, label, wrap_mode=True)
+
+    live_processes = find_processes_for_path(server_dir)
+    if live_processes:
+        report.warn(
+            "A Java/server process appears to be using this server folder.",
+            "Setup can still generate a detached WatchDog, but do not start it until the current live process is stopped.\n"
+            + "\n".join(live_processes[:5]),
+            blocks_start=True,
+        )
+    else:
+        report.ok("No obvious running Java process was found for this folder.")
+
+    if (server_dir / "session.lock").exists() or (server_dir / "world" / "session.lock").exists():
+        report.warn("session.lock exists.", "That is normal for a running world, but it means WatchDog should not start this copy yet.", blocks_start=True)
+    else:
+        report.ok("No obvious session.lock found at the server root/world root.")
+
+    check_eula(report, server_dir)
+    check_start_script(report, server_dir)
+    check_minecraft_shape(report, server_dir)
+
+    if install_root.exists() and any(visible_children(install_root)):
+        report.warn(
+            "WatchDog install target is not empty.",
+            "BlackGrid will overwrite the generated watchdog/ folder and start scripts there, not the live server folder.",
+        )
+    else:
+        report.ok("WatchDog install target is empty or does not exist.")
+
+    report.info("Wrap mode keeps ATM11 auto-update disabled by default.", "The generated WatchDog can observe/run the server first. Turn updates on manually after you trust it.")
+    return report
+
+
+def check_install_root_safety(report: PreflightReport, install_root: Path) -> None:
+    root = install_root.resolve()
+    if root == root.anchor_path if hasattr(root, "anchor_path") else False:
+        report.fail("Install target cannot be the filesystem root.", str(root))
+
+    if root == Path(root.anchor).resolve():
+        report.fail("Install target cannot be the filesystem root.", str(root))
+
+    if root == REPO_ROOT:
+        report.fail("Install target cannot be the BlackGrid repo root.", str(root))
+    elif is_inside(root, REPO_ROOT):
+        report.warn("Install target is inside the BlackGrid repo.", "That works for testing, but generated live server folders should usually live outside the repo.")
+    else:
+        report.ok("Install target is outside the BlackGrid repo.")
+
+    if root == WATCHDOG_SOURCE or is_inside(root, WATCHDOG_SOURCE):
+        report.fail("Install target cannot be inside the source WatchDog folder.", str(root))
+
+
+def check_path_separation(report: PreflightReport, server_dir: Path, install_root: Path) -> None:
+    server = server_dir.resolve()
+    target = install_root.resolve()
+
+    if server == target:
+        report.fail("WatchDog install folder cannot be the same as the live server folder.", str(target))
+    elif is_inside(target, server):
+        report.fail("WatchDog install folder cannot be inside the live server folder.", f"install_root={target}\nserver_dir={server}")
+    elif is_inside(server, target):
+        report.fail("Live server folder cannot be inside the WatchDog install folder.", f"server_dir={server}\ninstall_root={target}")
+    else:
+        report.ok("WatchDog install folder is separate from the server folder.")
+
+
+def check_manifest(report: PreflightReport, manifest: dict) -> None:
+    missing = [key for key in ["file_id", "display_name", "download_url"] if not manifest.get(key)]
+    if missing:
+        report.fail("ATM11 manifest is missing required fields.", ", ".join(missing))
+    else:
+        report.ok("ATM11 manifest has file_id, display_name, and download_url.", f"{manifest.get('display_name')} ({manifest.get('file_id')})")
+
+
+def check_duplicate_ports(report: PreflightReport, ports: dict[str, int]) -> None:
+    seen: dict[int, list[str]] = {}
+    for label, port in ports.items():
+        seen.setdefault(port, []).append(label)
+
+    conflicts = {port: labels for port, labels in seen.items() if len(labels) > 1}
+    if conflicts:
+        detail = "\n".join(f"{port}: {', '.join(labels)}" for port, labels in conflicts.items())
+        report.fail("Two enabled services are configured for the same port.", detail)
+    else:
+        report.ok("No duplicate enabled service ports detected.")
+
+
+def check_port_bind(report: PreflightReport, port: int, label: str, *, wrap_mode: bool) -> None:
+    if not (1 <= int(port) <= 65535):
+        report.fail(f"{label} is not a valid TCP port.", str(port))
+        return
+
+    if port_is_available(port):
+        report.ok(f"Port {port} is available for {label}.")
+        return
+
+    if wrap_mode:
+        report.warn(
+            f"Port {port} is already in use for {label}.",
+            "This is expected if the live server is currently running. Setup can generate the wrapper, but do not start WatchDog until the current process stops.",
+            blocks_start=True,
+        )
+    else:
+        report.warn(
+            f"Port {port} is already in use for {label}.",
+            "The new server can be generated, but it probably cannot start on this port until the conflict is fixed.",
+            blocks_start=True,
+        )
+
+
+def read_server_properties(path: Path) -> dict[str, str]:
+    if not path.exists():
+        return {}
+    props: dict[str, str] = {}
+    try:
+        for raw_line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            props[key.strip()] = value.strip()
+    except OSError:
+        return {}
+    return props
+
+
+def minecraft_ports_from_properties(props: dict[str, str]) -> dict[str, int]:
+    ports = {"minecraft.server-port": int_or_default(props.get("server-port"), DEFAULT_MINECRAFT_PORT)}
+    if truthy(props.get("enable-query")):
+        ports["minecraft.query.port"] = int_or_default(props.get("query.port"), ports["minecraft.server-port"])
+    if truthy(props.get("enable-rcon")):
+        ports["minecraft.rcon.port"] = int_or_default(props.get("rcon.port"), 25575)
+    return ports
+
+
+def check_eula(report: PreflightReport, server_dir: Path) -> None:
+    eula = server_dir / "eula.txt"
+    if not eula.exists():
+        report.warn("eula.txt is missing.", "Minecraft will not fully start until eula=true is accepted.", blocks_start=True)
+        return
+    text = eula.read_text(encoding="utf-8", errors="replace").lower()
+    if "eula=true" in text:
+        report.ok("Minecraft EULA is accepted.")
+    else:
+        report.warn("Minecraft EULA is not accepted.", "Set eula=true before starting.", blocks_start=True)
+
+
+def check_start_script(report: PreflightReport, server_dir: Path) -> None:
+    candidates = ["startserver.bat", "run.bat", "start.bat", "startserver.cmd", "run.cmd", "startserver.sh", "run.sh", "start.sh"]
+    found = [name for name in candidates if (server_dir / name).exists()]
+    if found:
+        report.ok("Found server start script.", ", ".join(found))
+    else:
+        report.fail("No server start script found.", "Expected one of: " + ", ".join(candidates))
+
+
+def check_minecraft_shape(report: PreflightReport, server_dir: Path) -> None:
+    expected = ["mods", "config"]
+    found = [name for name in expected if (server_dir / name).exists()]
+    if found:
+        report.ok("Minecraft/ATM11-looking folders found.", ", ".join(found))
+    else:
+        report.warn("Server folder does not look much like ATM11 yet.", "No mods/ or config/ folder found. This may still be okay if the server generates files later.")
+
+
+def port_is_available(port: int) -> bool:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            sock.bind(("0.0.0.0", int(port)))
+            return True
+        except OSError:
+            return False
+
+
+def find_processes_for_path(path: Path) -> list[str]:
+    needle = str(path.resolve()).lower()
+    alt_needle = needle.replace("\\", "/")
+    commands: list[list[str]]
+    if os.name == "nt":
+        commands = [["powershell", "-NoProfile", "-Command", "Get-CimInstance Win32_Process | Select-Object ProcessId,CommandLine | ConvertTo-Json -Compress"]]
+    else:
+        commands = [["ps", "-axo", "pid=,command="]]
+
+    matches: list[str] = []
+    for command in commands:
+        try:
+            result = subprocess.run(command, capture_output=True, text=True, timeout=8, check=False)
+        except Exception:
+            continue
+        output = (result.stdout or "") + "\n" + (result.stderr or "")
+        for raw_line in output.splitlines():
+            line = raw_line.strip()
+            lowered = line.lower().replace("\\", "/")
+            if needle in line.lower() or alt_needle in lowered:
+                if "java" in lowered or "server" in lowered or "minecraft" in lowered:
+                    matches.append(line[:260])
+    return matches
 
 
 def print_done(install_root: Path, server_name: str) -> None:
@@ -184,18 +509,24 @@ def print_done(install_root: Path, server_name: str) -> None:
     print("After that, WatchDog owns this one server. BlackGrid only comes back when you want to make or wrap another one.")
 
 
-def ensure_empty_or_confirm(path: Path) -> None:
+def visible_children(path: Path) -> list[Path]:
     if not path.exists():
-        return
-    visible = [item for item in path.iterdir() if item.name not in {".DS_Store", "Thumbs.db"}]
-    if visible and not yes_no(f"Target folder already has stuff in it: {path}\nUse it anyway?", False):
-        raise BlackGridError("Target folder is not empty.")
+        return []
+    return [item for item in path.iterdir() if item.name not in {".DS_Store", "Thumbs.db"}]
 
 
 def resolve_user_path(value: str) -> Path:
     if not value:
         raise BlackGridError("A path is required.")
     return Path(value).expanduser().resolve()
+
+
+def is_inside(child: Path, parent: Path) -> bool:
+    try:
+        child.resolve().relative_to(parent.resolve())
+        return child.resolve() != parent.resolve()
+    except ValueError:
+        return False
 
 
 def slugify(value: str) -> str:
@@ -208,6 +539,17 @@ def slugify(value: str) -> str:
 def safe_name(value: str) -> str:
     name = "".join(char if char.isalnum() or char in {".", "-", "_"} else "-" for char in str(value)).strip("-")
     return name or "serverfiles"
+
+
+def truthy(value: str | None) -> bool:
+    return str(value or "").strip().lower() in {"true", "1", "yes", "on"}
+
+
+def int_or_default(value: str | None, default: int) -> int:
+    try:
+        return int(str(value).strip())
+    except (TypeError, ValueError):
+        return default
 
 
 def load_atm11_manifest() -> dict:
@@ -321,11 +663,22 @@ def yaml_path(path: Path) -> str:
     return str(path.resolve()).replace("\\", "/")
 
 
-def write_watchdog_config(watchdog_dir: Path, install_root: Path, server_dir: Path, manifest_path: Path, server_name: str) -> None:
+def write_watchdog_config(
+    *,
+    watchdog_dir: Path,
+    install_root: Path,
+    server_dir: Path,
+    manifest_path: Path,
+    server_name: str,
+    enable_atm11_updates: bool,
+) -> None:
     config_dir = watchdog_dir / "config"
     config_dir.mkdir(parents=True, exist_ok=True)
     display_name = server_name.replace("-", " ").title().replace(" ", "")
     server_path = yaml_path(server_dir)
+    update_enabled = "true" if enable_atm11_updates else "false"
+    auto_download = "true" if enable_atm11_updates else "false"
+    auto_apply = "true" if enable_atm11_updates else "false"
     content = f'''# Generated by BlackGrid Setup Shell.
 # BlackGrid creates the standalone folder. WatchDog runs this one server.
 
@@ -386,14 +739,14 @@ web_panel:
 
 plugins:
   atm11_auto_update:
-    enabled: true
+    enabled: {update_enabled}
     server_dir: "{server_path}"
     update_dir: "{yaml_path(install_root / 'updates' / 'atm11')}"
     backup_dir: "{yaml_path(install_root / 'backups' / 'atm11_updates')}"
     check_interval_minutes: 60
     initial_check_delay_seconds: 60
-    auto_download: true
-    auto_apply_on_scheduled_restart: true
+    auto_download: {auto_download}
+    auto_apply_on_scheduled_restart: {auto_apply}
     manifest_url: "{manifest_path.resolve().as_uri()}"
     curseforge_scrape_fallback: true
     postpone_failed_file_ids: true
