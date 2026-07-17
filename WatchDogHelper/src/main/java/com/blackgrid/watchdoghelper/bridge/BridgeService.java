@@ -31,7 +31,7 @@ public final class BridgeService {
         minecraftServer = server;
 
         if (!Config.BRIDGE_ENABLED.get()) {
-            WatchDogHelper.LOGGER.info("[WatchDog Helper Bridge] Bridge disabled in config.");
+            WatchDogHelper.LOGGER.info("[WatchDog Helper Bridge] Bridge disabled in NeoForge config.");
             return;
         }
 
@@ -86,8 +86,20 @@ public final class BridgeService {
             return;
         }
 
-        if (!isAuthorized(body)) {
+        DiscordChatBridgeConfig.Settings settings = DiscordChatBridgeConfig.get();
+        if (!settings.enabled || !settings.allowDiscordToMinecraft) {
+            sendJson(exchange, 503, error("discord chat bridge disabled"));
+            return;
+        }
+
+        if (!isAuthorized(body, settings)) {
             sendJson(exchange, 403, error("unauthorized"));
+            return;
+        }
+
+        String channelId = getString(body, "channelId", "").trim();
+        if (!settings.gameChatChannelId.isBlank() && !settings.gameChatChannelId.equals(channelId)) {
+            sendJson(exchange, 403, error("wrong discord channel"));
             return;
         }
 
@@ -132,6 +144,7 @@ public final class BridgeService {
         response.addProperty("ok", true);
         response.addProperty("mod", "watchdog_helper");
         response.addProperty("bridge", "online");
+        response.addProperty("discordChatBridgeEnabled", DiscordChatBridgeConfig.get().enabled);
         response.addProperty("serverAvailable", minecraftServer != null);
 
         if (minecraftServer != null) {
@@ -215,6 +228,16 @@ public final class BridgeService {
         return configuredToken.equals(suppliedToken);
     }
 
+    private static boolean isAuthorized(JsonObject body, DiscordChatBridgeConfig.Settings settings) {
+        if (!settings.usableToken()) {
+            WatchDogHelper.LOGGER.warn("[WatchDog Discord Chat] bridgeToken is not configured securely.");
+            return false;
+        }
+
+        String suppliedToken = getString(body, "token", "");
+        return settings.bridgeToken.equals(suppliedToken);
+    }
+
     private static String getString(JsonObject body, String key, String fallback) {
         if (body == null || !body.has(key) || body.get(key).isJsonNull()) {
             return fallback;
@@ -273,7 +296,9 @@ public final class BridgeService {
     }
 
     private static MutableComponent discordMessage(String author, String text) {
-        return Component.literal(formatLore(Config.DISCORD_PREFIX.get()))
+        DiscordChatBridgeConfig.Settings settings = DiscordChatBridgeConfig.get();
+        String prefix = settings.discordToMinecraftPrefix == null ? "[Discord] " : settings.discordToMinecraftPrefix;
+        return Component.literal(prefix)
                 .withStyle(ChatFormatting.DARK_AQUA)
                 .append(Component.literal(author).withStyle(ChatFormatting.AQUA))
                 .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
