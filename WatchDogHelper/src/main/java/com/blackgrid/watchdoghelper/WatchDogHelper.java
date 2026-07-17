@@ -3,6 +3,7 @@ import com.blackgrid.watchdoghelper.player.PlayerLeaveHandler;
 import com.blackgrid.watchdoghelper.bridge.WatchDogHelperChatBridgeHandler;
 
 import com.blackgrid.watchdoghelper.bridge.BridgeLifecycleHandler;
+import com.blackgrid.watchdoghelper.bridge.DiscordChatBridgeCommands;
 import com.blackgrid.watchdoghelper.command.WatchDogHelperCommands;
 import com.blackgrid.watchdoghelper.currency.CurrencyTickHandler;
 import com.blackgrid.watchdoghelper.player.PlayerWelcomeHandler;
@@ -23,6 +24,7 @@ public class WatchDogHelper {
 
     public WatchDogHelper(IEventBus modEventBus, ModContainer modContainer) {
         NeoForge.EVENT_BUS.register(new WatchDogHelperCommands());
+        NeoForge.EVENT_BUS.register(new DiscordChatBridgeCommands());
         NeoForge.EVENT_BUS.register(new CurrencyTickHandler());
         NeoForge.EVENT_BUS.register(new BridgeLifecycleHandler());
         NeoForge.EVENT_BUS.register(new WatchDogHelperChatBridgeHandler());
