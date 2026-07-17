@@ -59,6 +59,11 @@ The BlackGrid startup check runs before the setup shell opens from `blackgrid.ba
 - Git
 - Python 3.10+
 - tmux
+- Half a brain cell.
+
+`Half a brain cell.` is a deliberate troll check. It only appears when the real startup requirements passed. If Git, Python, or tmux are actually missing, BlackGrid shows the real failure instead and stops.
+
+When only the troll check fails, BlackGrid asks whether to continue. `yes` keeps going into the setup shell. `no` closes out so everyone can sit there and laugh in silence.
 
 Do not put Minecraft, Java, ATM11, Discord, port, manifest, or game-specific checks in the BlackGrid startup check. Those belong later, after the user picks what they are creating or wrapping.
 
