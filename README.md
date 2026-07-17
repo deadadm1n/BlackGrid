@@ -1,17 +1,52 @@
 # BlackGrid
 
-BlackGrid Gaming Community
+BlackGrid is a gaming community and server-hosting lab for people who want to play, learn, experiment, and eventually try running servers without already being a sysadmin goblin.
 
-This repository contains two related projects:
+Right now the public face is simple: BlackGrid is a gaming community that can grow into more than one server. Behind the scenes, the direction is bigger:
 
-- `WatchDog/` - the Python wrapper, web panel, automation plugins, and Ubuntu start script.
-- `WatchDogHelper/` - the NeoForge Java helper mod installed into the Minecraft server. It provides the Minecraft-side bridge, economy, commands, MOTD/rules, and placement protections.
+- **BlackGrid** is the umbrella community, hosting/lab idea, and long-term brand.
+- **WatchDog** is the server wrapper and control layer that should eventually manage more than one kind of game server.
+- **AetherReach** is the first Minecraft server/community running under BlackGrid.
+- **WatchDog Helper** is the Minecraft-side helper mod used by AetherReach and future Minecraft servers that need in-game bridge features.
 
-Runtime files are intentionally not tracked. The live ATM11 server folder, logs, backups, virtual environments, generated jars, and `.env` secrets stay local.
+Minecraft is where this started. It should not be where the idea gets stuck.
+
+## Repo layout
+
+This repository currently contains the infrastructure for the first BlackGrid stack:
+
+- `WatchDog/` - Python server wrapper, web panel, automation plugins, update tools, and start scripts.
+- `WatchDogHelper/` - NeoForge Java helper mod for Minecraft servers. It provides the Minecraft-side bridge, economy/commands, MOTD/rules, and placement protections.
+- `configs/` - clean public config templates and manifests.
+- `scripts/` - release helpers and remote WatchDog automation.
+
+Runtime files are intentionally not tracked. The live AetherReach/ATM11 server folder, logs, backups, virtual environments, generated jars, and `.env` secrets stay local.
 
 For a fresh WatchDog install, copy `WatchDog/.env.example` to `WatchDog/.env` and fill in the local tokens.
 
-Clean public config templates also live in `configs/`.
+## Current direction
+
+BlackGrid is being repositioned from “one Minecraft server project” into a broader gaming community and learning-focused server host.
+
+The near-term path is:
+
+1. Keep AetherReach stable as the first Minecraft server.
+2. Keep WatchDog working as the wrapper/control plane.
+3. Start separating generic server-wrapper behavior from Minecraft/ATM11-specific behavior.
+4. Add cleaner docs and profiles so other server types can exist later.
+5. Grow BlackGrid’s appearance into the community/server-lab brand instead of making everything look like it only belongs to ATM11.
+
+Long term, WatchDog should be able to run profiles for different game servers, such as Minecraft, CS/Source-style servers, and other dedicated servers that need start/stop/restart/log/update/status handling.
+
+## Design rule
+
+BlackGrid is the platform.
+
+WatchDog is the wrapper.
+
+AetherReach is a server.
+
+Minecraft-specific code belongs in Minecraft-specific plugins, configs, docs, or helper mods. WatchDog core should stay as reusable as possible.
 
 ## Releasing WatchDog Helper
 
@@ -61,9 +96,9 @@ wrapper update apply
 
 Wrapper updates preserve local config, `.env`, logs, state, backups, downloads, `atm11`, and update staging folders. WatchDog Helper jar updates replace the helper jar in `atm11/mods` and back up the previous jar first.
 
-## ATM11 ServerFiles Updates
+## AetherReach / ATM11 ServerFiles updates
 
-WatchDog can update the ATM11 server pack from the checked-in manifest at:
+AetherReach currently runs on ATM11, so WatchDog can update the server pack from the checked-in manifest at:
 
 ```text
 configs/atm11-serverfiles.json
@@ -77,7 +112,7 @@ The manifest is refreshed by the scheduled GitHub Actions workflow in `.github/w
 python scripts/update-atm11-serverfiles-manifest.py
 ```
 
-## Discord Linking
+## Discord linking
 
 WatchDog Helper exposes `/discord` in Minecraft. The player runs it in-game, then clicks the generated Discord OAuth link.
 
