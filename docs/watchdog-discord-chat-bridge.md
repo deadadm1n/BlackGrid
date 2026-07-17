@@ -158,7 +158,23 @@ Reloading re-reads `WatchDog/discord-chat.json` and restarts the helper HTTP lis
 
 The base helper should only ship generic WatchDog/bridge commands.
 
-AetherReach or other developed-server commands like economy, shop, auction house, rules, welcome text, and placement restrictions should live in a server-specific addon/profile instead of registering in the base helper.
+The old developed-server command bucket is intentionally stripped from the base command runtime. These commands do not belong in the default helper jar anymore:
+
+```text
+/rules
+/discord
+/discordlink
+/linkdiscord
+/balance
+/shards
+/pay
+/ah
+/shop
+/currency
+/aetherreach
+```
+
+Those should come back only as a server-specific addon/profile command tree.
 
 ## Rule
 
