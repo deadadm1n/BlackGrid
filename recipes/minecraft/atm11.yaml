@@ -17,6 +17,14 @@ minecraft:
     - NeoForge
     - All the Mods 11
 
+identity:
+  prompt: true
+  default_display_name: "My ATM11 Server"
+  slug_source: display_name
+  notes:
+    - AetherReach is not the default identity for generated installs.
+    - BlackGrid should ask the operator for the server/community name and use that value in generated WatchDog/plugin config.
+
 provider:
   type: curseforge_web_api_serverfiles
   project_id: 1148445
@@ -113,5 +121,6 @@ notes:
   - This recipe documents the current no-key CurseForge web API path.
   - Minecraft recipes now sit under game -> loader -> server/modpack so Fabric, Vanilla, Forge, NeoForge, Paper, and others can be offered cleanly.
   - BlackGrid addons are optional overlays, not part of the base server recipe.
+  - Generated installs should use the operator-selected server identity instead of hardcoding AetherReach.
   - BlackGrid should try the provider first, then fall back to the checked-in manifest if CurseForge changes or blocks the endpoint.
   - After setup, WatchDog owns that one server and BlackGrid does not need to keep running.
