@@ -14,12 +14,28 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Main economy service for WatchDog Helper.
+ *
+ * This class is the boring money API used by commands, shop, auction house,
+ * and passive rewards.
+ *
+ * Important rules:
+ * - storage owns the real balance data
+ * - player NBT is only mirrored for compatibility/backup visibility
+ * - every balance change should be logged through CurrencyTransactionLogger
+ * - FTB Ranks can override reward amounts and auction limits
+ */
 public class CurrencyService {
 
+    // Old player NBT key. Kept so old balances can migrate into real storage.
     private static final String BALANCE_KEY = "aetherreach_currency";
+
+    // Permission nodes read from FTB Ranks when that mod is present.
     public static final String REWARD_NODE = "aetherreach.currency_per_10_minutes";
     public static final String AUCTION_LIMIT_NODE = "aetherreach.auction_limit";
 
+    // Current storage backend. SQLite is primary, JSON account file is kept as a companion/export path.
     private static CurrencyStorage storage = new SqliteCurrencyStorage(
             Path.of("aetherreach", "economy.db"),
             Path.of("aetherreach", "currency", "accounts.json")
@@ -60,6 +76,7 @@ public class CurrencyService {
         long balance = storage.getBalance(player.getUUID(), player.getName().getString());
         mirrorBalanceToPlayerNbt(player, balance);
 
+        // Log both successful and failed spends. Failed payments matter when debugging abuse/bugs.
         if (success) {
             CurrencyTransactionLogger.log(reason, actor, player.getName().getString(), amount, balance, "deduct");
         } else {
@@ -94,6 +111,11 @@ public class CurrencyService {
         return updated;
     }
 
+    /**
+     * Reward amount for one passive payout cycle.
+     *
+     * FTB Ranks wins if configured. Otherwise use the fallback config value.
+     */
     public static int getRewardPerCycle(ServerPlayer player) {
         int ranked = getPositiveRankInteger(player, REWARD_NODE);
         if (ranked > 0) {
@@ -107,6 +129,10 @@ public class CurrencyService {
         return getRewardPerCycle(player);
     }
 
+    /**
+     * Auction limit can be set with FTB Ranks.
+     * If missing, it scales from passive reward so higher ranks can list more.
+     */
     public static int getAuctionListingLimit(ServerPlayer player) {
         int ranked = getPositiveRankInteger(player, AUCTION_LIMIT_NODE);
         if (ranked > 0) {
@@ -134,6 +160,12 @@ public class CurrencyService {
         return 0;
     }
 
+    /**
+     * Pays one passive reward cycle to a player.
+     *
+     * If cap is set and player is already at/above cap, skip payout.
+     * If payout would exceed cap, only pay the amount needed to hit cap.
+     */
     public static long addPassiveReward(ServerPlayer player) {
         int reward = getRewardPerCycle(player);
         if (reward <= 0) {
@@ -173,6 +205,10 @@ public class CurrencyService {
         return Config.CURRENCY_NAME.get();
     }
 
+    /**
+     * Old versions kept balance on the player's persistent NBT.
+     * New versions use storage. This copies old NBT balance into storage once.
+     */
     private static void migratePlayerIfNeeded(ServerPlayer player) {
         String name = player.getName().getString();
 
@@ -191,6 +227,10 @@ public class CurrencyService {
         }
     }
 
+    /**
+     * Mirror the current balance back to player NBT for compatibility.
+     * Storage is still the real source of truth.
+     */
     private static void mirrorBalanceToPlayerNbt(ServerPlayer player, long balance) {
         player.getPersistentData().putLong(BALANCE_KEY, Math.max(0L, balance));
     }
