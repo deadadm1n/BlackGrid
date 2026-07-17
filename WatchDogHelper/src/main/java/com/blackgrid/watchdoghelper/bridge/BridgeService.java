@@ -30,8 +30,12 @@ public final class BridgeService {
     public static synchronized void start(MinecraftServer server) {
         minecraftServer = server;
 
-        if (!Config.BRIDGE_ENABLED.get()) {
-            WatchDogHelper.LOGGER.info("[WatchDog Helper Bridge] Bridge disabled in NeoForge config.");
+        DiscordChatBridgeConfig.Settings discordSettings = DiscordChatBridgeConfig.get();
+        boolean legacyBridgeEnabled = Config.BRIDGE_ENABLED.get();
+        boolean discordBridgeEnabled = discordSettings.enabled && discordSettings.allowDiscordToMinecraft;
+
+        if (!legacyBridgeEnabled && !discordBridgeEnabled) {
+            WatchDogHelper.LOGGER.info("[WatchDog Helper Bridge] Bridge disabled. Enable NeoForge config bridgeEnabled or WatchDog/discord-chat.json enabled.");
             return;
         }
 
@@ -39,15 +43,28 @@ public final class BridgeService {
             return;
         }
 
-        String host = Config.BRIDGE_HOST.get();
-        int port = Config.BRIDGE_PORT.getAsInt();
+        String host = discordBridgeEnabled ? discordSettings.inboundHost : Config.BRIDGE_HOST.get();
+        int port = discordBridgeEnabled ? discordSettings.inboundPort : Config.BRIDGE_PORT.getAsInt();
 
         try {
             httpServer = HttpServer.create(new InetSocketAddress(host, port), 0);
-            httpServer.createContext("/api/veil", BridgeService::handleVeil);
-            httpServer.createContext("/api/broadcast", BridgeService::handleBroadcast);
-            httpServer.createContext("/api/discord", BridgeService::handleDiscord);
-            httpServer.createContext("/api/status", BridgeService::handleStatus);
+
+            if (legacyBridgeEnabled) {
+                httpServer.createContext("/api/veil", BridgeService::handleVeil);
+                httpServer.createContext("/api/broadcast", BridgeService::handleBroadcast);
+            }
+
+            if (discordBridgeEnabled) {
+                httpServer.createContext(discordSettings.inboundDiscordPath, BridgeService::handleDiscord);
+                if (!"/api/discord".equals(discordSettings.inboundDiscordPath)) {
+                    httpServer.createContext("/api/discord", BridgeService::handleDiscord);
+                }
+            }
+
+            httpServer.createContext(discordSettings.statusPath, BridgeService::handleStatus);
+            if (!"/api/status".equals(discordSettings.statusPath)) {
+                httpServer.createContext("/api/status", BridgeService::handleStatus);
+            }
             httpServer.setExecutor(Executors.newFixedThreadPool(2));
             httpServer.start();
 
@@ -55,6 +72,11 @@ public final class BridgeService {
         } catch (IOException e) {
             WatchDogHelper.LOGGER.error("[WatchDog Helper Bridge] Failed to start bridge server", e);
         }
+    }
+
+    public static synchronized void restart(MinecraftServer server) {
+        stop();
+        start(server);
     }
 
     public static synchronized void stop() {
@@ -140,11 +162,16 @@ public final class BridgeService {
             }
         }
 
+        DiscordChatBridgeConfig.Settings settings = DiscordChatBridgeConfig.get();
         JsonObject response = new JsonObject();
         response.addProperty("ok", true);
         response.addProperty("mod", "watchdog_helper");
-        response.addProperty("bridge", "online");
-        response.addProperty("discordChatBridgeEnabled", DiscordChatBridgeConfig.get().enabled);
+        response.addProperty("bridge", httpServer == null ? "offline" : "online");
+        response.addProperty("discordChatBridgeEnabled", settings.enabled);
+        response.addProperty("discordToMinecraftEnabled", settings.allowDiscordToMinecraft);
+        response.addProperty("minecraftToDiscordEnabled", settings.sendMinecraftChatToDiscord);
+        response.addProperty("configuredChannel", !settings.gameChatChannelId.isBlank());
+        response.addProperty("configPath", DiscordChatBridgeConfig.path() == null ? "" : DiscordChatBridgeConfig.path().toString());
         response.addProperty("serverAvailable", minecraftServer != null);
 
         if (minecraftServer != null) {
