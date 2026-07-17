@@ -1,3 +1,4 @@
+import argparse
 import asyncio
 import sys
 
@@ -13,9 +14,25 @@ except ModuleNotFoundError as exc:
     )
     raise SystemExit(1) from exc
 
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        prog="watchdog",
+        description="Run one WatchDog server wrapper instance.",
+    )
+    parser.add_argument(
+        "--config",
+        default="config/wrapper.yaml",
+        help="Path to the WatchDog wrapper config file. Defaults to config/wrapper.yaml.",
+    )
+    return parser.parse_args()
+
+
 async def main():
-    app = WrapperApp()
+    args = parse_args()
+    app = WrapperApp(config_path=args.config)
     await app.run()
+
 
 if __name__ == "__main__":
     asyncio.run(main())
