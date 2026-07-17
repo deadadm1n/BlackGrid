@@ -19,5 +19,6 @@ public class WatchDogHelperChatBridgeHandler {
         }
 
         WatchdogEventClient.sendChatEvent(uuid, playerName, message);
+        DiscordChatBridgeClient.sendMinecraftChat(uuid, playerName, message);
     }
 }
