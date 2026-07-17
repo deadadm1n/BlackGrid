@@ -85,7 +85,7 @@ blackgrid_addons:
       name: Discord bot bridge
       default: false
       install_phase: config_only
-      description: Optional Discord control/notification bridge. Stripped from the base install unless selected.
+      description: Optional Discord bot process owned by WatchDog. Stripped from the base install unless selected.
     - id: blackgrid.minecraft_helper
       name: BlackGrid Minecraft helper mod
       default: false
@@ -93,9 +93,21 @@ blackgrid_addons:
       loaders:
         - neoforge
       description: Optional in-game helper mod. Stripped from the base install unless selected.
+    - id: blackgrid.discord_chat_bridge
+      name: NeoForge Discord chat bridge
+      default: false
+      install_phase: helper_config
+      requires:
+        - blackgrid.minecraft_helper
+        - blackgrid.discord_bot
+      loaders:
+        - neoforge
+      config_path: WatchDog/discord-chat.json
+      description: Optional Minecraft chat <-> Discord channel bridge. Default config is generated disabled.
   stripped_by_default:
     - blackgrid.discord_bot
     - blackgrid.minecraft_helper
+    - blackgrid.discord_chat_bridge
 
 notes:
   - This recipe documents the current no-key CurseForge web API path.
