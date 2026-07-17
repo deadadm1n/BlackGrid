@@ -1,8 +1,21 @@
-id: minecraft.atm11
+id: minecraft.neoforge.atm11
 name: All the Mods 11
 game: minecraft
+loader: neoforge
 kind: modpack_server
 status: first-supported
+
+minecraft:
+  version: "1.21.1"
+  loader:
+    id: neoforge
+    display_name: NeoForge
+    fallback_loaders:
+      - forge
+  menu_path:
+    - Minecraft
+    - NeoForge
+    - All the Mods 11
 
 provider:
   type: curseforge_web_api_serverfiles
@@ -19,6 +32,7 @@ provider:
   download:
     url: "https://www.curseforge.com/api/v1/mods/{project_id}/files/{file_id}/download"
   match:
+    minecraft_version: "1.21.1"
     server_file_name_contains:
       - ServerFiles
       - Server Files
@@ -57,11 +71,35 @@ watchdog:
   plugins:
     atm11_auto_update: true
     auto_restart: false
-    discord_bot: false
     minecraft_events: false
     website_status: false
 
+blackgrid_addons:
+  offered:
+    - id: blackgrid.web_panel
+      name: WatchDog web panel
+      default: false
+      install_phase: config_only
+      description: Optional local/secured web UI for controlling this WatchDog instance.
+    - id: blackgrid.discord_bot
+      name: Discord bot bridge
+      default: false
+      install_phase: config_only
+      description: Optional Discord control/notification bridge. Stripped from the base install unless selected.
+    - id: blackgrid.minecraft_helper
+      name: BlackGrid Minecraft helper mod
+      default: false
+      install_phase: mod_download
+      loaders:
+        - neoforge
+      description: Optional in-game helper mod. Stripped from the base install unless selected.
+  stripped_by_default:
+    - blackgrid.discord_bot
+    - blackgrid.minecraft_helper
+
 notes:
   - This recipe documents the current no-key CurseForge web API path.
+  - Minecraft recipes now sit under game -> loader -> server/modpack so Fabric, Vanilla, Forge, NeoForge, Paper, and others can be offered cleanly.
+  - BlackGrid addons are optional overlays, not part of the base server recipe.
   - BlackGrid should try the provider first, then fall back to the checked-in manifest if CurseForge changes or blocks the endpoint.
   - After setup, WatchDog owns that one server and BlackGrid does not need to keep running.
