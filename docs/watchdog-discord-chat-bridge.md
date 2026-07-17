@@ -122,16 +122,43 @@ The Discord bot side still needs to consume that endpoint and post to Discord. T
 
 ## Commands
 
-Operators can inspect or reload the server-folder bridge config without restarting Minecraft:
+The base helper command root is `watchdog`. The short alias is `wd`.
 
 ```text
+/watchdog
+/watchdog status
+/watchdog reload
+/wd
+/wd status
+/wd reload
+```
+
+Discord bridge commands live under the same root:
+
+```text
+/watchdog discord
 /watchdog discord status
 /watchdog discord reload
+/wd discord
+/wd discord status
+/wd discord reload
+```
+
+The old direct alias still works for compatibility, but new docs should prefer `/watchdog` or `/wd`:
+
+```text
+/watchdogdiscord
 /watchdogdiscord status
 /watchdogdiscord reload
 ```
 
 Reloading re-reads `WatchDog/discord-chat.json` and restarts the helper HTTP listener if needed.
+
+## Command boundary
+
+The base helper should only ship generic WatchDog/bridge commands.
+
+AetherReach or other developed-server commands like economy, shop, auction house, rules, welcome text, and placement restrictions should live in a server-specific addon/profile instead of registering in the base helper.
 
 ## Rule
 
