@@ -2,7 +2,11 @@
 set -Eeuo pipefail
 
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-SESSION="${WATCHDOG_TMUX_SESSION:-watchdog}"
+INSTALL_ROOT="$(dirname "$ROOT")"
+INSTALL_NAME="$(basename "$INSTALL_ROOT")"
+SAFE_NAME="$(printf '%s' "$INSTALL_NAME" | tr -cs 'A-Za-z0-9_.-' '-' | sed 's/^-//; s/-$//')"
+SESSION="${WATCHDOG_TMUX_SESSION:-blackgrid-${SAFE_NAME:-server}}"
+CONFIG_PATH="${WATCHDOG_CONFIG:-config/wrapper.yaml}"
 
 cd "$ROOT"
 
@@ -49,11 +53,13 @@ if tmux has-session -t "$SESSION" 2>/dev/null; then
 fi
 
 echo "Starting WatchDog in tmux session '$SESSION'."
+echo "Config: $CONFIG_PATH"
 echo "Detach safely with: Ctrl-b then d"
-echo "Reconnect later with: ./start.sh"
+echo "Reconnect later with: ./attach.sh or ../attach-watchdog.sh"
 
 export WATCHDOG_ROOT="$ROOT"
 export WATCHDOG_PYTHON="$PYTHON"
+export WATCHDOG_CONFIG_PATH="$CONFIG_PATH"
 
 exec tmux new-session -s "$SESSION" \
-    'cd "$WATCHDOG_ROOT" && "$WATCHDOG_PYTHON" main.py; code=$?; echo; echo "WatchDog exited with code $code."; echo "Press Enter to close this tmux window."; read -r; exit "$code"'
+    'cd "$WATCHDOG_ROOT" && "$WATCHDOG_PYTHON" main.py --config "$WATCHDOG_CONFIG_PATH"; code=$?; echo; echo "WatchDog exited with code $code."; echo "Press Enter to close this tmux window."; read -r; exit "$code"'
