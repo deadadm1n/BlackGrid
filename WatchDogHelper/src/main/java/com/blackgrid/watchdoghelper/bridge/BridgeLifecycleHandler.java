@@ -8,6 +8,7 @@ public class BridgeLifecycleHandler {
 
     @SubscribeEvent
     public void onServerStarted(ServerStartedEvent event) {
+        DiscordChatBridgeConfig.load(event.getServer());
         BridgeService.start(event.getServer());
     }
 
