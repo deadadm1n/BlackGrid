@@ -4,7 +4,6 @@ import json
 import os
 import shutil
 import stat
-import sys
 import urllib.request
 import zipfile
 from datetime import datetime, timezone
@@ -20,7 +19,10 @@ class BlackGridError(RuntimeError):
 
 
 def main() -> int:
-    print_banner()
+    print("BlackGrid Setup Shell")
+    print("=====================")
+    print("BlackGrid creates the server cage. WatchDog keeps the gremlin alive.")
+    print()
 
     while True:
         choice = menu(
@@ -48,13 +50,6 @@ def main() -> int:
         print()
 
 
-def print_banner() -> None:
-    print("BlackGrid Setup Shell")
-    print("=====================")
-    print("BlackGrid creates the server cage. WatchDog keeps the gremlin alive.")
-    print()
-
-
 def menu(title: str, items: list[str]) -> int:
     print(title)
     for index, item in enumerate(items, start=1):
@@ -62,10 +57,8 @@ def menu(title: str, items: list[str]) -> int:
 
     while True:
         value = input("> ").strip()
-        if value.isdigit():
-            choice = int(value)
-            if 1 <= choice <= len(items):
-                return choice
+        if value.isdigit() and 1 <= int(value) <= len(items):
+            return int(value)
         print("Pick one of the numbers. The machine is not psychic yet.")
 
 
@@ -94,27 +87,27 @@ def create_new_atm11_server() -> None:
     print()
 
     server_name = slugify(ask("Server folder/name", "aetherreach"))
-    default_root = Path.cwd() / "BlackGridServers" / server_name
-    install_root = resolve_user_path(ask("Where should this standalone server live?", str(default_root)))
-
+    install_root = resolve_user_path(
+        ask(
+            "Where should this standalone server live?",
+            str(Path.cwd() / "BlackGridServers" / server_name),
+        )
+    )
     ensure_empty_or_confirm(install_root)
-    manifest = load_atm11_manifest()
 
+    manifest = load_atm11_manifest()
     server_dir = install_root / "server"
     watchdog_dir = install_root / "watchdog"
     downloads_dir = install_root / "downloads"
     manifests_dir = install_root / "manifests"
 
-    install_root.mkdir(parents=True, exist_ok=True)
-    server_dir.mkdir(parents=True, exist_ok=True)
-    downloads_dir.mkdir(parents=True, exist_ok=True)
-    manifests_dir.mkdir(parents=True, exist_ok=True)
+    for path in [install_root, server_dir, downloads_dir, manifests_dir]:
+        path.mkdir(parents=True, exist_ok=True)
 
     print("\nInstalling detached WatchDog...")
     copy_watchdog(watchdog_dir)
 
-    manifest_path = manifests_dir / "atm11-serverfiles.json"
-    manifest_path.write_text(json.dumps({"atm11_serverfiles": manifest}, indent=2) + "\n", encoding="utf-8")
+    manifest_path = write_detached_manifest(manifests_dir, manifest)
 
     zip_path = downloads_dir / f"{manifest['file_id']}-{safe_name(manifest['display_name'])}.zip"
     print(f"\nDownloading ATM11 ServerFiles: {manifest['display_name']}")
@@ -139,16 +132,9 @@ def create_new_atm11_server() -> None:
     else:
         print("Skipped EULA. The server will not fully start until eula.txt is accepted.")
 
-    write_watchdog_config(
-        watchdog_dir=watchdog_dir,
-        install_root=install_root,
-        server_dir=server_dir,
-        manifest_path=manifest_path,
-        server_name=server_name,
-    )
+    write_watchdog_config(watchdog_dir, install_root, server_dir, manifest_path, server_name)
     seed_atm11_update_state(install_root, manifest)
     write_start_scripts(install_root)
-
     print_done(install_root, server_name)
 
 
@@ -162,12 +148,15 @@ def wrap_existing_atm11_server() -> None:
         raise BlackGridError(f"Existing server folder was not found: {existing_server}")
 
     server_name = slugify(ask("Server name", existing_server.name or "aetherreach"))
-    default_root = existing_server.parent / f"{server_name}-watchdog"
-    install_root = resolve_user_path(ask("Where should this standalone WatchDog install live?", str(default_root)))
-
+    install_root = resolve_user_path(
+        ask(
+            "Where should this standalone WatchDog install live?",
+            str(existing_server.parent / f"{server_name}-watchdog"),
+        )
+    )
     ensure_empty_or_confirm(install_root)
-    manifest = load_atm11_manifest()
 
+    manifest = load_atm11_manifest()
     watchdog_dir = install_root / "watchdog"
     manifests_dir = install_root / "manifests"
     manifests_dir.mkdir(parents=True, exist_ok=True)
@@ -175,18 +164,9 @@ def wrap_existing_atm11_server() -> None:
     print("\nInstalling detached WatchDog...")
     copy_watchdog(watchdog_dir)
 
-    manifest_path = manifests_dir / "atm11-serverfiles.json"
-    manifest_path.write_text(json.dumps({"atm11_serverfiles": manifest}, indent=2) + "\n", encoding="utf-8")
-
-    write_watchdog_config(
-        watchdog_dir=watchdog_dir,
-        install_root=install_root,
-        server_dir=existing_server,
-        manifest_path=manifest_path,
-        server_name=server_name,
-    )
+    manifest_path = write_detached_manifest(manifests_dir, manifest)
+    write_watchdog_config(watchdog_dir, install_root, existing_server, manifest_path, server_name)
     write_start_scripts(install_root)
-
     print_done(install_root, server_name)
 
 
@@ -207,13 +187,8 @@ def print_done(install_root: Path, server_name: str) -> None:
 def ensure_empty_or_confirm(path: Path) -> None:
     if not path.exists():
         return
-
     visible = [item for item in path.iterdir() if item.name not in {".DS_Store", "Thumbs.db"}]
-    if not visible:
-        return
-
-    print(f"\nTarget folder already has stuff in it: {path}")
-    if not yes_no("Use it anyway and overwrite generated BlackGrid/WatchDog files where needed?", False):
+    if visible and not yes_no(f"Target folder already has stuff in it: {path}\nUse it anyway?", False):
         raise BlackGridError("Target folder is not empty.")
 
 
@@ -224,62 +199,47 @@ def resolve_user_path(value: str) -> Path:
 
 
 def slugify(value: str) -> str:
-    cleaned = []
-    for char in value.strip().lower():
-        if char.isalnum():
-            cleaned.append(char)
-        elif char in {" ", "-", "_", "."}:
-            cleaned.append("-")
-    slug = "".join(cleaned).strip("-")
+    slug = "".join(char if char.isalnum() else "-" for char in value.strip().lower()).strip("-")
     while "--" in slug:
         slug = slug.replace("--", "-")
     return slug or "server"
 
 
 def safe_name(value: str) -> str:
-    cleaned = []
-    for char in str(value):
-        if char.isalnum() or char in {".", "-", "_"}:
-            cleaned.append(char)
-        else:
-            cleaned.append("-")
-    name = "".join(cleaned).strip("-")
+    name = "".join(char if char.isalnum() or char in {".", "-", "_"} else "-" for char in str(value)).strip("-")
     return name or "serverfiles"
 
 
 def load_atm11_manifest() -> dict:
     if not ATM11_MANIFEST.exists():
         raise BlackGridError(f"ATM11 manifest is missing: {ATM11_MANIFEST}")
-
     payload = json.loads(ATM11_MANIFEST.read_text(encoding="utf-8"))
     manifest = payload.get("atm11_serverfiles", payload)
-    required = ["file_id", "display_name", "download_url"]
-    missing = [key for key in required if not manifest.get(key)]
+    missing = [key for key in ["file_id", "display_name", "download_url"] if not manifest.get(key)]
     if missing:
         raise BlackGridError(f"ATM11 manifest is missing: {', '.join(missing)}")
     return manifest
 
 
+def write_detached_manifest(manifests_dir: Path, manifest: dict) -> Path:
+    path = manifests_dir / "atm11-serverfiles.json"
+    path.write_text(json.dumps({"atm11_serverfiles": manifest}, indent=2) + "\n", encoding="utf-8")
+    return path
+
+
 def download_file(url: str, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp_path = path.with_suffix(path.suffix + ".tmp")
-
     request = urllib.request.Request(
         url,
-        headers={
-            "User-Agent": "BlackGrid-SetupShell",
-            "Accept": "application/zip,application/octet-stream,*/*",
-        },
+        headers={"User-Agent": "BlackGrid-SetupShell", "Accept": "application/zip,application/octet-stream,*/*"},
     )
-
     with urllib.request.urlopen(request, timeout=180) as response:
         with tmp_path.open("wb") as output:
             shutil.copyfileobj(response, output)
-
     if tmp_path.stat().st_size < 1024:
         tmp_path.unlink(missing_ok=True)
         raise BlackGridError("Downloaded file is suspiciously tiny. The server goblin probably handed us HTML instead of a zip.")
-
     tmp_path.replace(path)
 
 
@@ -313,7 +273,6 @@ def find_pack_root(extracted_dir: Path) -> Path | None:
             score += 2
         if score:
             scored.append((score, path))
-
     if not scored:
         return None
     scored.sort(key=lambda item: item[0], reverse=True)
@@ -338,26 +297,15 @@ def copy_tree_contents(source: Path, target: Path) -> None:
 def copy_watchdog(destination: Path) -> None:
     if not WATCHDOG_SOURCE.exists():
         raise BlackGridError(f"WatchDog source folder is missing: {WATCHDOG_SOURCE}")
-
     if destination.exists():
         shutil.rmtree(destination)
-
-    ignore = shutil.ignore_patterns(
-        ".venv",
-        "__pycache__",
-        "*.pyc",
-        "logs",
-        "state",
-        "backups",
-        "downloads",
-        "tmp",
-        "updates",
-        "atm11",
-        "server.zip",
-        ".env",
+    shutil.copytree(
+        WATCHDOG_SOURCE,
+        destination,
+        ignore=shutil.ignore_patterns(
+            ".venv", "__pycache__", "*.pyc", "logs", "state", "backups", "downloads", "tmp", "updates", "atm11", "server.zip", ".env"
+        ),
     )
-    shutil.copytree(WATCHDOG_SOURCE, destination, ignore=ignore)
-
     for script in [destination / "start.sh"]:
         if script.exists():
             make_executable(script)
@@ -366,38 +314,19 @@ def copy_watchdog(destination: Path) -> None:
 def make_executable(path: Path) -> None:
     if os.name == "nt":
         return
-    mode = path.stat().st_mode
-    path.chmod(mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+    path.chmod(path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
-def path_for_yaml(path: Path) -> str:
-    return str(path).replace("\\", "/")
+def yaml_path(path: Path) -> str:
+    return str(path.resolve()).replace("\\", "/")
 
 
-def write_watchdog_config(
-    *,
-    watchdog_dir: Path,
-    install_root: Path,
-    server_dir: Path,
-    manifest_path: Path,
-    server_name: str,
-) -> None:
+def write_watchdog_config(watchdog_dir: Path, install_root: Path, server_dir: Path, manifest_path: Path, server_name: str) -> None:
     config_dir = watchdog_dir / "config"
     config_dir.mkdir(parents=True, exist_ok=True)
-
-    manifest_uri = manifest_path.resolve().as_uri()
-    server_path = path_for_yaml(server_dir.resolve())
-    logs_path = path_for_yaml((install_root / "logs").resolve())
-    state_path = path_for_yaml((install_root / "state").resolve())
-    backups_path = path_for_yaml((install_root / "backups").resolve())
-    downloads_path = path_for_yaml((install_root / "downloads").resolve())
-    tmp_path = path_for_yaml((install_root / "tmp").resolve())
-    updates_path = path_for_yaml((install_root / "updates" / "atm11").resolve())
-    atm11_backups_path = path_for_yaml((install_root / "backups" / "atm11_updates").resolve())
-
     display_name = server_name.replace("-", " ").title().replace(" ", "")
-
-    content = f"""# Generated by BlackGrid Setup Shell.
+    server_path = yaml_path(server_dir)
+    content = f'''# Generated by BlackGrid Setup Shell.
 # BlackGrid creates the standalone folder. WatchDog runs this one server.
 
 wrapper:
@@ -405,11 +334,11 @@ wrapper:
   debug: false
 
 paths:
-  logs_dir: "{logs_path}"
-  state_dir: "{state_path}"
-  backups_dir: "{backups_path}"
-  downloads_dir: "{downloads_path}"
-  tmp_dir: "{tmp_path}"
+  logs_dir: "{yaml_path(install_root / 'logs')}"
+  state_dir: "{yaml_path(install_root / 'state')}"
+  backups_dir: "{yaml_path(install_root / 'backups')}"
+  downloads_dir: "{yaml_path(install_root / 'downloads')}"
+  tmp_dir: "{yaml_path(install_root / 'tmp')}"
 
 server:
   directory: "{server_path}"
@@ -459,13 +388,13 @@ plugins:
   atm11_auto_update:
     enabled: true
     server_dir: "{server_path}"
-    update_dir: "{updates_path}"
-    backup_dir: "{atm11_backups_path}"
+    update_dir: "{yaml_path(install_root / 'updates' / 'atm11')}"
+    backup_dir: "{yaml_path(install_root / 'backups' / 'atm11_updates')}"
     check_interval_minutes: 60
     initial_check_delay_seconds: 60
     auto_download: true
     auto_apply_on_scheduled_restart: true
-    manifest_url: "{manifest_uri}"
+    manifest_url: "{manifest_path.resolve().as_uri()}"
     curseforge_scrape_fallback: true
     postpone_failed_file_ids: true
     keep_backups_days: 7
@@ -476,28 +405,10 @@ plugins:
     manual_display_name: ""
     manual_page_url: ""
     manual_download_url: ""
-    replace_dirs:
-      - "config"
-      - "defaultconfigs"
-      - "kubejs"
-      - "libraries"
-      - "mods"
-    replace_files:
-      - "run.sh"
-      - "startserver.sh"
-      - "server-setup-config.yaml"
-      - "user_jvm_args.txt"
-    preserve_custom_mods:
-      - "watchdog_helper-*.jar"
-      - "watchdog_helper.jar"
-      - "aetherreachcore-*.jar"
-      - "worldedit-mod-7.4.3.jar"
-    preserve_paths:
-      - "aetherreach"
-      - "config/watchdog_helper-common.toml"
-      - "config/aetherreachcore-common.toml"
-      - "world/serverconfig/ftbranks"
-      - "config/worldedit"
+    replace_dirs: ["config", "defaultconfigs", "kubejs", "libraries", "mods"]
+    replace_files: ["run.sh", "startserver.sh", "server-setup-config.yaml", "user_jvm_args.txt"]
+    preserve_custom_mods: ["watchdog_helper-*.jar", "watchdog_helper.jar", "aetherreachcore-*.jar", "worldedit-mod-7.4.3.jar"]
+    preserve_paths: ["aetherreach", "config/watchdog_helper-common.toml", "config/aetherreachcore-common.toml", "world/serverconfig/ftbranks", "config/worldedit"]
 
   auto_restart:
     enabled: false
@@ -521,29 +432,12 @@ plugins:
     token: "${{DISCORD_BOT_TOKEN:-}}"
     ranks:
       enabled: false
-      create_missing_roles: true
-      sync_on_link: true
-      sync_on_join: true
-      link_command: "!link"
-      link_ttl_seconds: 600
-      manage_permission: "manage_roles"
-      default_role_color: "#99aab5"
-      oauth:
-        enabled: false
-        client_id: "${{DISCORD_CLIENT_ID:-}}"
-        client_secret: "${{DISCORD_CLIENT_SECRET:-}}"
-        redirect_uri: "${{DISCORD_REDIRECT_URI:-}}"
-      roles:
-        member:
-          name: "Member"
-          color: "#99aab5"
-          auto_assign: true
 
   log_rotation:
     enabled: false
     keep_days: 7
     rotate_on_wrapper_start: true
-    minecraft_logs_dir: "{path_for_yaml((server_dir / 'logs').resolve())}"
+    minecraft_logs_dir: "{yaml_path(server_dir / 'logs')}"
 
   minecraft_events:
     enabled: false
@@ -559,8 +453,8 @@ plugins:
   update_manager:
     enabled: false
     repository: ""
-    update_dir: "{path_for_yaml((install_root / 'updates' / 'manager').resolve())}"
-    backup_dir: "{path_for_yaml((install_root / 'backups' / 'update_manager').resolve())}"
+    update_dir: "{yaml_path(install_root / 'updates' / 'manager')}"
+    backup_dir: "{yaml_path(install_root / 'backups' / 'update_manager')}"
     auto_download: false
     targets: {{}}
 
@@ -572,8 +466,7 @@ plugins:
     latest_display_name: ""
     download_url: ""
     patch_file: "plugins/auto_update/patches.yaml"
-"""
-
+'''
     (config_dir / "wrapper.yaml").write_text(content, encoding="utf-8")
 
 
@@ -583,7 +476,7 @@ def seed_atm11_update_state(install_root: Path, manifest: dict) -> None:
     state = {
         "installed_file_id": int(manifest.get("file_id", 0) or 0),
         "installed_display_name": manifest.get("display_name", ""),
-        "installed_file_name": safe_name(manifest.get("display_name", "ServerFiles")) + ".zip",
+        "installed_file_name": safe_name(manifest.get("display_name", "ServerFiles")),
         "installed_at": datetime.now(timezone.utc).isoformat(),
         "source": "blackgrid_setup_shell",
     }
@@ -599,10 +492,14 @@ def write_start_scripts(install_root: Path) -> None:
         "@echo off\r\n"
         "setlocal\r\n"
         "cd /D \"%~dp0watchdog\"\r\n"
-        "if exist \".venv\\Scripts\\python.exe\" (\r\n"
-        "    set \"PYTHON=.venv\\Scripts\\python.exe\"\r\n"
-        ") else (\r\n"
-        "    set \"PYTHON=python\"\r\n"
+        "if not exist \".venv\\Scripts\\python.exe\" (\r\n"
+        "    python -m venv .venv\r\n"
+        ")\r\n"
+        "set \"PYTHON=.venv\\Scripts\\python.exe\"\r\n"
+        "if not exist \".venv\\blackgrid-ready\" (\r\n"
+        "    \"%PYTHON%\" -m pip install --upgrade pip\r\n"
+        "    \"%PYTHON%\" -m pip install -r requirements.txt\r\n"
+        "    echo ready> .venv\\blackgrid-ready\r\n"
         ")\r\n"
         "\"%PYTHON%\" main.py --config config/wrapper.yaml\r\n"
         "pause\r\n",
@@ -615,14 +512,8 @@ def write_start_scripts(install_root: Path) -> None:
         "set -Eeuo pipefail\n"
         "ROOT=\"$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)\"\n"
         "cd \"$ROOT/watchdog\"\n"
-        "if [[ -x .venv/bin/python ]]; then\n"
-        "  PYTHON=.venv/bin/python\n"
-        "elif command -v python3 >/dev/null 2>&1; then\n"
-        "  PYTHON=python3\n"
-        "else\n"
-        "  PYTHON=python\n"
-        "fi\n"
-        "exec \"$PYTHON\" main.py --config config/wrapper.yaml\n",
+        "chmod +x ./start.sh 2>/dev/null || true\n"
+        "exec ./start.sh\n",
         encoding="utf-8",
     )
     make_executable(sh)
