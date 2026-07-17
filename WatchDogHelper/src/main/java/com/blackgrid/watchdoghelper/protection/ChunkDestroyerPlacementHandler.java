@@ -10,12 +10,25 @@ import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 
+/**
+ * Stops a configured dangerous block from being placed outside a configured dimension.
+ *
+ * Current use case:
+ * - chunk destroyer / quarry type block
+ * - only allow it in the mining dimension
+ *
+ * Config decides both IDs:
+ * - chunkDestroyerBlockId = exact block id to restrict
+ * - miningDimensionId = dimension where placement is allowed
+ */
 public class ChunkDestroyerPlacementHandler {
 
     @SubscribeEvent
     public void onBlockPlaced(BlockEvent.EntityPlaceEvent event) {
+        // Get the registry id of the block the player/entity just placed.
         String placedBlockId = BuiltInRegistries.BLOCK.getKey(event.getPlacedBlock().getBlock()).toString();
 
+        // Not the restricted block? Leave it alone.
         if (!placedBlockId.equals(Config.CHUNK_DESTROYER_BLOCK_ID.get())) {
             return;
         }
@@ -27,10 +40,12 @@ public class ChunkDestroyerPlacementHandler {
         String currentDimension = level.dimension().identifier().toString();
         String allowedDimension = Config.MINING_DIMENSION_ID.get();
 
+        // Correct dimension, so allow placement.
         if (currentDimension.equals(allowedDimension)) {
             return;
         }
 
+        // Wrong dimension. Cancel the placement before the block lands.
         event.setCanceled(true);
         Entity entity = event.getEntity();
 
