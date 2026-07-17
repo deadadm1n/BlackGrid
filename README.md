@@ -15,9 +15,12 @@ Minecraft is where this started. It should not be where the idea gets stuck.
 
 This repository currently contains the infrastructure for the first BlackGrid stack:
 
+- `blackgrid.py` - standalone setup shell for creating or wrapping server installs.
+- `blackgrid.bat` / `blackgrid.sh` - small launchers for the setup shell.
 - `WatchDog/` - Python server wrapper, web panel, automation plugins, update tools, and start scripts.
 - `WatchDogHelper/` - NeoForge Java helper mod for Minecraft servers. It provides the Minecraft-side bridge, economy/commands, MOTD/rules, and placement protections.
 - `configs/` - clean public config templates and manifests.
+- `recipes/` - provisioning recipes for BlackGrid-created servers.
 - `scripts/` - release helpers and remote WatchDog automation.
 
 Runtime files are intentionally not tracked. The live AetherReach/ATM11 server folder, logs, backups, virtual environments, generated jars, and `.env` secrets stay local.
@@ -47,6 +50,27 @@ WatchDog is the wrapper.
 AetherReach is a server.
 
 Minecraft-specific code belongs in Minecraft-specific plugins, configs, docs, or helper mods. WatchDog core should stay as reusable as possible.
+
+## BlackGrid setup shell
+
+BlackGrid can be run as a standalone setup shell:
+
+```powershell
+.\blackgrid.bat
+```
+
+```bash
+bash blackgrid.sh
+```
+
+The first shell pass supports two intentionally boring flows:
+
+1. Create a new Minecraft / ATM11 server from the checked-in ServerFiles manifest.
+2. Wrap an existing Minecraft / ATM11 server without moving the live server folder.
+
+The output is a detached server folder with its own WatchDog install and start scripts. After setup, BlackGrid does not need to keep running. WatchDog owns that one server.
+
+See `docs/blackgrid-setup-shell.md` for the shape and safety notes.
 
 ## Releasing WatchDog Helper
 
