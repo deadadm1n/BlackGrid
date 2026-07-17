@@ -42,6 +42,7 @@ class Report:
         print("BlackGrid startup requirements:")
         print("- Git")
         print(f"- Python {MIN_PYTHON[0]}.{MIN_PYTHON[1]}+")
+        print("- tmux")
         print()
 
         for check in self.checks:
@@ -65,15 +66,16 @@ def main() -> int:
 def run_checks() -> Report:
     report = Report("BlackGrid startup requirement check")
 
-    # Keep this intentionally tiny. This check is for starting BlackGrid itself,
-    # not for starting Minecraft, ATM11, Java, tmux, Discord, or any other server goblin.
-    # Server/game requirements belong in WatchDog/server_system_check.py after the user picks a server.
+    # Keep this focused on what BlackGrid needs before WatchDog gets to run
+    # its selected-server check. Java, Minecraft files, ports, manifests, and
+    # Discord settings are still server-specific and belong later.
     check_python(report)
     check_git(report)
+    check_tmux(report)
 
     report.info(
         "Server-specific requirements are checked later.",
-        "Java, game files, ports, tmux, manifests, and server-specific tools are checked after the user picks a server.",
+        "Java, game files, ports, manifests, Discord settings, and per-game tools are checked after the user picks a server.",
     )
 
     return report
@@ -101,7 +103,7 @@ def check_git(report: Report) -> None:
         )
         return
 
-    version = git_version()
+    version = command_version(["git", "--version"])
     if version:
         report.ok("Git is available.", version)
     else:
@@ -109,10 +111,27 @@ def check_git(report: Report) -> None:
         report.warn("Could not read Git version.", "BlackGrid can still start; this is just less pretty output.")
 
 
-def git_version() -> str:
+def check_tmux(report: Report) -> None:
+    tmux_path = shutil.which("tmux")
+    if not tmux_path:
+        report.fail(
+            "tmux is not installed or is not on PATH.",
+            "Install tmux before running BlackGrid. WatchDog uses it for detached server terminals and reattach support.",
+        )
+        return
+
+    version = command_version(["tmux", "-V"])
+    if version:
+        report.ok("tmux is available.", version)
+    else:
+        report.ok("tmux is available.", tmux_path)
+        report.warn("Could not read tmux version.", "BlackGrid can still start; this is just less pretty output.")
+
+
+def command_version(command: list[str]) -> str:
     try:
         result = subprocess.run(
-            ["git", "--version"],
+            command,
             capture_output=True,
             text=True,
             timeout=5,
