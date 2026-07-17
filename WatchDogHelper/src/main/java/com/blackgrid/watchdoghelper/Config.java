@@ -3,17 +3,33 @@ package com.blackgrid.watchdoghelper;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 /**
- * Server config for WatchDog Helper.
+ * NeoForge COMMON config for WatchDog Helper.
  *
- * Rank-based passive currency rewards are configured in FTB Ranks with:
- *   "aetherreach.currency_per_10_minutes": <integer>
+ * This config is for general helper behavior: names, messages, economy,
+ * legacy HTTP bridge settings, and gameplay restrictions.
  *
- * The legacy node name is kept for compatibility, but rewards are currently paid every 15 minutes.
- * If a player has no rank value set, defaultCurrencyPerTenMinutes is used.
+ * The newer Discord chat bridge also creates an easy-to-find server-owner file:
+ *   <server folder>/WatchDog/discord-chat.json
+ *
+ * So there are two config layers:
+ * - this NeoForge config = normal mod settings
+ * - WatchDog/discord-chat.json = BlackGrid/WatchDog Discord chat bridge settings
  */
 public class Config {
 
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
+
+    // ---------------------------------------------------------------------
+    // Economy config
+    // ---------------------------------------------------------------------
+    // Currency is the simple server-side money system used by /balance, /pay,
+    // shop rotation, auction house, and passive rewards.
+    //
+    // Rank-based passive currency rewards are configured in FTB Ranks with:
+    //   "aetherreach.currency_per_10_minutes": <integer>
+    //
+    // The legacy node name says "10 minutes", but payouts currently run every
+    // 15 minutes. The old name stays so existing rank configs do not break.
 
     public static final ModConfigSpec.ConfigValue<String> CURRENCY_NAME = BUILDER
             .comment("Currency display name.")
@@ -34,6 +50,12 @@ public class Config {
     public static final ModConfigSpec.IntValue SHOP_ROTATION_HOURS = BUILDER
             .comment("Shop rotation hours.")
             .defineInRange("shopRotationHours", 12, 1, 168);
+
+    // ---------------------------------------------------------------------
+    // Display names and prefixes
+    // ---------------------------------------------------------------------
+    // These make the plugin less hardcoded to one server name. Most message
+    // templates can use {veil}, {server}, and {helper}.
 
     public static final ModConfigSpec.ConfigValue<String> SERVER_NAME = BUILDER
             .comment("Server display name.")
@@ -75,6 +97,12 @@ public class Config {
             .comment("Exchange display name.")
             .define("exchangeName", "");
 
+    // ---------------------------------------------------------------------
+    // Discord link/invite text
+    // ---------------------------------------------------------------------
+    // These are for commands like /discord and /discordlink. The actual chat
+    // bridge has its own WatchDog/discord-chat.json file.
+
     public static final ModConfigSpec.ConfigValue<String> DISCORD_INVITE_URL = BUILDER
             .comment("Discord invite URL.")
             .define("discordInviteUrl", "");
@@ -83,6 +111,11 @@ public class Config {
             .comment("Discord account link URL. Use {state} where the one-time token belongs.")
             .define("discordLinkUrl", "");
 
+    // ---------------------------------------------------------------------
+    // Join / MOTD / rules / leave messages
+    // ---------------------------------------------------------------------
+    // These are all default-off. The plugin should not spam a server until the
+    // owner chooses to enable the behavior.
 
     public static final ModConfigSpec.BooleanValue WELCOME_ENABLED = BUILDER
             .comment("Enable join messages.")
@@ -128,6 +161,16 @@ public class Config {
             .comment("Leave message.")
             .define("playerLeaveMessage", "");
 
+    // ---------------------------------------------------------------------
+    // Legacy HTTP bridge
+    // ---------------------------------------------------------------------
+    // This is the older WatchDog helper HTTP listener. It can receive messages
+    // from WatchDog and broadcast them into Minecraft.
+    //
+    // The Discord chat bridge can also start the listener using
+    // WatchDog/discord-chat.json, so do not confuse these with the newer
+    // Discord-specific settings.
+
     public static final ModConfigSpec.BooleanValue BRIDGE_ENABLED = BUILDER
             .comment("Enable HTTP bridge.")
             .define("bridgeEnabled", false);
@@ -151,6 +194,12 @@ public class Config {
     public static final ModConfigSpec.ConfigValue<String> WATCHDOG_CALLBACK_URL = BUILDER
             .comment("WatchDog callback URL.")
             .define("watchdogCallbackUrl", "");
+
+    // ---------------------------------------------------------------------
+    // Gameplay restriction config
+    // ---------------------------------------------------------------------
+    // Used by ChunkDestroyerPlacementHandler. Lets the server block a dangerous
+    // block outside a configured mining dimension.
 
     public static final ModConfigSpec.ConfigValue<String> CHUNK_DESTROYER_BLOCK_ID = BUILDER
             .comment("Restricted block ID.")
