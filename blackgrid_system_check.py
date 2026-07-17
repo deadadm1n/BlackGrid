@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+import sys
 from dataclasses import dataclass
+
+MIN_PYTHON = (3, 10)
 
 
 @dataclass
@@ -36,6 +39,11 @@ class Report:
     def print(self) -> None:
         print(f"\n{self.title}")
         print("-" * len(self.title))
+        print("BlackGrid startup requirements:")
+        print("- Git")
+        print(f"- Python {MIN_PYTHON[0]}.{MIN_PYTHON[1]}+")
+        print()
+
         for check in self.checks:
             print(f"[{check.level}] {check.message}")
             if check.detail:
@@ -60,9 +68,28 @@ def run_checks() -> Report:
     # Keep this intentionally tiny. This check is for starting BlackGrid itself,
     # not for starting Minecraft, ATM11, Java, tmux, Discord, or any other server goblin.
     # Server/game requirements belong in WatchDog/server_system_check.py after the user picks a server.
+    check_python(report)
     check_git(report)
 
+    report.info(
+        "Server-specific requirements are checked later.",
+        "Java, game files, ports, tmux, manifests, and server-specific tools are checked after the user picks a server.",
+    )
+
     return report
+
+
+def check_python(report: Report) -> None:
+    py = sys.version_info
+    version = f"{py.major}.{py.minor}.{py.micro}"
+    if (py.major, py.minor) >= MIN_PYTHON:
+        report.ok("Python version is supported.", version)
+        return
+
+    report.fail(
+        "Python is too old for BlackGrid.",
+        f"Found Python {version}. Install Python {MIN_PYTHON[0]}.{MIN_PYTHON[1]}+ and run BlackGrid again.",
+    )
 
 
 def check_git(report: Report) -> None:
@@ -80,11 +107,6 @@ def check_git(report: Report) -> None:
     else:
         report.ok("Git is available.", git_path)
         report.warn("Could not read Git version.", "BlackGrid can still start; this is just less pretty output.")
-
-    report.info(
-        "Only BlackGrid startup requirement checked here.",
-        "Java, game files, ports, tmux, manifests, and server-specific tools are checked later for the selected server.",
-    )
 
 
 def git_version() -> str:
