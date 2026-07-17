@@ -6,6 +6,7 @@ import sys
 from dataclasses import dataclass
 
 MIN_PYTHON = (3, 10)
+TROLL_REQUIREMENT = "Half a brain cell."
 
 
 @dataclass
@@ -13,6 +14,7 @@ class Check:
     level: str
     message: str
     detail: str = ""
+    troll: bool = False
 
 
 class Report:
@@ -29,12 +31,20 @@ class Report:
     def warn(self, message: str, detail: str = "") -> None:
         self.checks.append(Check("WARN", message, detail))
 
-    def fail(self, message: str, detail: str = "") -> None:
-        self.checks.append(Check("FAIL", message, detail))
+    def fail(self, message: str, detail: str = "", *, troll: bool = False) -> None:
+        self.checks.append(Check("FAIL", message, detail, troll))
 
     @property
     def failed(self) -> bool:
         return any(check.level == "FAIL" for check in self.checks)
+
+    @property
+    def real_failed(self) -> bool:
+        return any(check.level == "FAIL" and not check.troll for check in self.checks)
+
+    @property
+    def troll_failed(self) -> bool:
+        return any(check.level == "FAIL" and check.troll for check in self.checks)
 
     def print(self) -> None:
         print(f"\n{self.title}")
@@ -43,6 +53,7 @@ class Report:
         print("- Git")
         print(f"- Python {MIN_PYTHON[0]}.{MIN_PYTHON[1]}+")
         print("- tmux")
+        print(f"- {TROLL_REQUIREMENT}")
         print()
 
         for check in self.checks:
@@ -51,8 +62,11 @@ class Report:
                 for line in check.detail.splitlines():
                     print(f"     {line}")
         print()
-        if self.failed:
-            print("Result: BlackGrid cannot start yet. Fix the FAIL items first.")
+
+        if self.real_failed:
+            print("Result: BlackGrid cannot start yet. Fix the real FAIL items first.")
+        elif self.troll_failed:
+            print("Result: BlackGrid found a fake catastrophic startup failure.")
         else:
             print("Result: BlackGrid has the minimum stuff it needs to start.")
 
@@ -60,7 +74,18 @@ class Report:
 def main() -> int:
     report = run_checks()
     report.print()
-    return 1 if report.failed else 0
+
+    if report.real_failed:
+        return 1
+
+    if report.troll_failed:
+        if ask_continue_after_troll_failure():
+            print("Continuing anyway. The silence is deafening.")
+            return 0
+        print("Closing out. We will now sit here and laugh in silence.")
+        return 1
+
+    return 0
 
 
 def run_checks() -> Report:
@@ -72,6 +97,12 @@ def run_checks() -> Report:
     check_python(report)
     check_git(report)
     check_tmux(report)
+
+    # Do not bury real startup failures under the joke. If a real requirement is
+    # missing, show that instead. The troll fail only appears when the machine
+    # passed the actual checks and BlackGrid is just being a gremlin.
+    if not report.real_failed:
+        check_half_brain_cell(report)
 
     report.info(
         "Server-specific requirements are checked later.",
@@ -126,6 +157,30 @@ def check_tmux(report: Report) -> None:
     else:
         report.ok("tmux is available.", tmux_path)
         report.warn("Could not read tmux version.", "BlackGrid can still start; this is just less pretty output.")
+
+
+def check_half_brain_cell(report: Report) -> None:
+    report.fail(
+        TROLL_REQUIREMENT,
+        "Optional but strongly recommended. BlackGrid failed to detect one. This may be a false positive. Probably.",
+        troll=True,
+    )
+
+
+def ask_continue_after_troll_failure() -> bool:
+    while True:
+        try:
+            value = input("Continue anyway? [y/N]: ").strip().lower()
+        except EOFError:
+            return False
+
+        if not value:
+            return False
+        if value in {"y", "yes"}:
+            return True
+        if value in {"n", "no"}:
+            return False
+        print("Type yes or no. The fake brain cell check cannot process interpretive dance yet.")
 
 
 def command_version(command: list[str]) -> str:
