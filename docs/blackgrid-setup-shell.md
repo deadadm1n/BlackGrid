@@ -12,6 +12,39 @@ Server folder = the actual game server files
 
 After BlackGrid creates a server, that server should be able to run with its own detached WatchDog install. BlackGrid can be closed, deleted, ignored, or used later to build another server.
 
+## Server identity
+
+Every generated server needs a user-selected identity.
+
+BlackGrid should not hardcode `AetherReach` into generated installs. AetherReach is one server/community that can run on BlackGrid, not the name of every server BlackGrid creates.
+
+During create or wrap setup, BlackGrid asks for a server name/folder name. That value becomes the generated server identity and should be reused anywhere the old developed server code would have said AetherReach.
+
+```text
+Server name entered by operator: Sky Goblin SMP
+Folder/id form: sky-goblin-smp
+Display form: Sky Goblin SMP
+```
+
+Generated output should use that identity for:
+
+- detached install folder names
+- tmux/session naming
+- WatchDog Discord bot `server_name`
+- website/status `server_name`
+- helper/mod display names where the base helper needs a public server name
+- server-specific data folders that used to be named `aetherreach`
+- preserve/update paths for server-specific addon data
+
+The rule is simple:
+
+```text
+AetherReach = example/live server name
+server_identity = whatever the operator picked during install
+```
+
+AetherReach-specific economy/shop/protection behavior should stay in an AetherReach addon/profile, not the base WatchDog Helper.
+
 ## System checks
 
 There are two different checks on purpose:
@@ -53,6 +86,7 @@ The first supported flow is intentionally boring:
 Run blackgrid.bat or ./blackgrid.sh
 Run BlackGrid system check
 Pick: Create new Minecraft / ATM11 server
+Choose server name / identity
 Choose target folder
 Run preflight checks
 Download ATM11 ServerFiles from the checked-in manifest
@@ -68,12 +102,13 @@ Run blackgrid.bat or ./blackgrid.sh
 Run BlackGrid system check
 Pick: Wrap existing Minecraft / ATM11 server
 Point at the existing server folder
+Choose server name / identity
 Choose a separate WatchDog install folder
 Run preflight checks
 Generate WatchDog around the existing server without moving it
 ```
 
-That wrap mode is what should be used first for AetherReach or any live server. Do not make the first test be the only live folder unless downtime demons sound fun that day.
+That wrap mode is what should be used first for a live server. Do not make the first test be the only live folder unless downtime demons sound fun that day.
 
 ## Preflight checks
 
@@ -111,7 +146,7 @@ For wrap mode, ATM11 auto-update is generated disabled by default. The point is 
 A generated server should look roughly like this:
 
 ```text
-AetherReach/
+<server-identity>/
   server/              # game server files for new installs
   watchdog/            # copied WatchDog wrapper for this one server
   logs/
@@ -136,7 +171,7 @@ On Linux, WatchDog uses `tmux`:
 ./start-watchdog.sh
 ```
 
-That enters a tmux session named from the install folder, such as `blackgrid-aetherreach`. Detach safely with:
+That enters a tmux session named from the install folder, such as `blackgrid-sky-goblin-smp`. Detach safely with:
 
 ```text
 Ctrl-b then d
