@@ -91,6 +91,47 @@ AetherReach/
 
 For wrap mode, the `server/` folder may live somewhere else. The generated WatchDog config points directly at the existing folder.
 
+## Reattaching to WatchDog
+
+BlackGrid can detach after setup, but the operator still needs a way back into the WatchDog terminal.
+
+On Linux, WatchDog uses `tmux`:
+
+```bash
+./start-watchdog.sh
+```
+
+That enters a tmux session named from the install folder, such as `blackgrid-aetherreach`. Detach safely with:
+
+```text
+Ctrl-b then d
+```
+
+Reconnect from the detached install with:
+
+```bash
+cd watchdog
+./attach.sh
+```
+
+Stop the wrapper politely with:
+
+```bash
+cd watchdog
+./stop.sh
+```
+
+The root generated `start-watchdog.sh` still works as the easy start path. The helper scripts inside `watchdog/` are the terminal re-entry path.
+
+On Windows, batch files cannot reattach to a console that was closed. The copied WatchDog install includes:
+
+```text
+watchdog\attach.bat
+watchdog\logs.bat
+```
+
+`attach.bat` explains the limitation. `logs.bat` tails `logs\wrapper.log` through PowerShell so the operator can still see what WatchDog is doing. For real detach/reattach behavior, use Linux/WSL with tmux.
+
 ## Boundary rule
 
 BlackGrid creates servers.
