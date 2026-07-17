@@ -8,7 +8,7 @@ Minecraft is the first target. It is not supposed to be the only target forever.
 
 ## What works now
 
-- Loads `config/wrapper.yaml`
+- Loads `config/wrapper.yaml`, or another config passed with `--config`
 - Loads enabled plugins from `plugins/*`
 - Starts a configured server directory/start script on Windows or Linux
 - Watches console output for startup success/failure patterns
@@ -80,6 +80,16 @@ python main.py
 
 Default config points to the local `atm11` folder and uses `start_script: "auto"`.
 On Windows it prefers `startserver.bat`/`run.bat`; on Linux it prefers `startserver.sh`/`run.sh`.
+
+To run a generated or alternate config:
+
+```bash
+python main.py --config config/wrapper.yaml
+```
+
+```powershell
+python main.py --config config\wrapper.yaml
+```
 
 ## Real AetherReach / ATM11 setup
 
