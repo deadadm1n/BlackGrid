@@ -1,18 +1,8 @@
 from __future__ import annotations
 
-import json
-import os
-import platform
 import shutil
-import socket
-import sys
+import subprocess
 from dataclasses import dataclass
-from pathlib import Path
-
-REPO_ROOT = Path(__file__).resolve().parent
-WATCHDOG_DIR = REPO_ROOT / "WatchDog"
-MANIFEST_PATH = REPO_ROOT / "configs" / "atm11-serverfiles.json"
-MIN_PYTHON = (3, 10)
 
 
 @dataclass
@@ -65,92 +55,51 @@ def main() -> int:
 
 
 def run_checks() -> Report:
-    report = Report("BlackGrid system check")
+    report = Report("BlackGrid startup requirement check")
 
-    py = sys.version_info
-    version = f"{py.major}.{py.minor}.{py.micro}"
-    if (py.major, py.minor) >= MIN_PYTHON:
-        report.ok("Python version is supported.", version)
-    else:
-        report.fail("Python is too old.", f"Found {version}. Need Python {MIN_PYTHON[0]}.{MIN_PYTHON[1]}+.")
-
-    report.info("Platform detected.", f"{platform.system()} {platform.release()} ({platform.machine()})")
-
-    if REPO_ROOT.exists():
-        report.ok("BlackGrid repo root exists.", str(REPO_ROOT))
-    else:
-        report.fail("BlackGrid repo root is missing.", str(REPO_ROOT))
-
-    for path, label in [
-        (REPO_ROOT / "blackgrid.py", "BlackGrid setup shell"),
-        (WATCHDOG_DIR, "WatchDog source folder"),
-        (WATCHDOG_DIR / "main.py", "WatchDog main entrypoint"),
-        (WATCHDOG_DIR / "requirements.txt", "WatchDog requirements"),
-        (MANIFEST_PATH, "ATM11 ServerFiles manifest"),
-    ]:
-        if path.exists():
-            report.ok(f"Found {label}.", str(path))
-        else:
-            report.fail(f"Missing {label}.", str(path))
-
-    check_manifest(report)
-    check_write_access(report, REPO_ROOT)
-    check_external_commands(report)
-    check_network_hint(report)
+    # Keep this intentionally tiny. This check is for starting BlackGrid itself,
+    # not for starting Minecraft, ATM11, Java, tmux, Discord, or any other server goblin.
+    # Server/game requirements belong in WatchDog/server_system_check.py after the user picks a server.
+    check_git(report)
 
     return report
 
 
-def check_manifest(report: Report) -> None:
-    if not MANIFEST_PATH.exists():
+def check_git(report: Report) -> None:
+    git_path = shutil.which("git")
+    if not git_path:
+        report.fail(
+            "Git is not installed or is not on PATH.",
+            "Install Git first, then reopen the terminal and run BlackGrid again.",
+        )
         return
-    try:
-        payload = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
-        data = payload.get("atm11_serverfiles", payload)
-    except Exception as exc:
-        report.fail("ATM11 manifest is not valid JSON.", str(exc))
-        return
 
-    missing = [key for key in ("file_id", "display_name", "download_url") if not data.get(key)]
-    if missing:
-        report.fail("ATM11 manifest is missing required fields.", ", ".join(missing))
+    version = git_version()
+    if version:
+        report.ok("Git is available.", version)
     else:
-        report.ok("ATM11 manifest has the minimum fields.", f"{data.get('display_name')} ({data.get('file_id')})")
+        report.ok("Git is available.", git_path)
+        report.warn("Could not read Git version.", "BlackGrid can still start; this is just less pretty output.")
+
+    report.info(
+        "Only BlackGrid startup requirement checked here.",
+        "Java, game files, ports, tmux, manifests, and server-specific tools are checked later for the selected server.",
+    )
 
 
-def check_write_access(report: Report, path: Path) -> None:
-    probe = path / ".blackgrid-system-check.tmp"
+def git_version() -> str:
     try:
-        probe.write_text("ok", encoding="utf-8")
-        probe.unlink(missing_ok=True)
-        report.ok("BlackGrid repo folder is writable.")
-    except OSError as exc:
-        report.fail("BlackGrid repo folder is not writable.", str(exc))
+        result = subprocess.run(
+            ["git", "--version"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+    except Exception:
+        return ""
 
-
-def check_external_commands(report: Report) -> None:
-    if os.name == "nt":
-        if shutil.which("powershell") or shutil.which("pwsh"):
-            report.ok("PowerShell is available for Windows helper checks.")
-        else:
-            report.warn("PowerShell was not found.", "BlackGrid can still run, but Windows process/log helper checks may be weaker.")
-    else:
-        if shutil.which("bash"):
-            report.ok("bash is available.")
-        else:
-            report.warn("bash was not found.", "Unix launch scripts expect bash.")
-        if shutil.which("tmux"):
-            report.ok("tmux is available for detached WatchDog sessions.")
-        else:
-            report.warn("tmux was not found.", "Linux servers can still be generated, but detached terminal reattach needs tmux installed.")
-
-
-def check_network_hint(report: Report) -> None:
-    try:
-        with socket.create_connection(("1.1.1.1", 443), timeout=3):
-            report.ok("Basic outbound network check passed.")
-    except OSError:
-        report.warn("Basic outbound network check failed.", "Creating a new ATM11 server needs internet access to download ServerFiles. Wrapping an existing server can still work.")
+    return (result.stdout or result.stderr or "").strip()
 
 
 if __name__ == "__main__":
