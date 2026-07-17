@@ -1,0 +1,43 @@
+id: minecraft.atm11
+name: All the Mods 11
+game: minecraft
+kind: modpack
+status: first-supported
+
+provider:
+  type: curseforge_serverfiles
+  project_id: 1148445
+  manifest: configs/atm11-serverfiles.json
+
+java:
+  required_major: 25
+
+server:
+  install_dir: server
+  start_script: auto
+  stop_command: stop
+  startup_timeout_seconds: 1800
+  shutdown_timeout_seconds: 180
+  success_patterns:
+    - 'For help, type "help"'
+  failure_patterns:
+    - 'Failed to start the minecraft server'
+    - 'Crash report saved'
+    - 'This crash report has been saved'
+    - 'A fatal error has been detected'
+    - 'FatalStartupException'
+    - 'session.lock: already locked'
+
+watchdog:
+  detached: true
+  plugins:
+    atm11_auto_update: true
+    auto_restart: false
+    discord_bot: false
+    minecraft_events: false
+    website_status: false
+
+notes:
+  - BlackGrid uses this recipe to create a standalone server folder.
+  - After setup, WatchDog owns that one server and BlackGrid does not need to keep running.
+  - This is the first recipe shape; future games should follow the same boring-provisioner pattern.
