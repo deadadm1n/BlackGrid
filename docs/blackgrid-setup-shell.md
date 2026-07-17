@@ -20,6 +20,7 @@ The first supported flow is intentionally boring:
 Run blackgrid.bat or ./blackgrid.sh
 Pick: Create new Minecraft / ATM11 server
 Choose target folder
+Run preflight checks
 Download ATM11 ServerFiles from the checked-in manifest
 Extract server files
 Generate a detached WatchDog install
@@ -33,10 +34,42 @@ Run blackgrid.bat or ./blackgrid.sh
 Pick: Wrap existing Minecraft / ATM11 server
 Point at the existing server folder
 Choose a separate WatchDog install folder
+Run preflight checks
 Generate WatchDog around the existing server without moving it
 ```
 
 That wrap mode is what should be used first for AetherReach or any live server. Do not make the first test be the only live folder unless downtime demons sound fun that day.
+
+## Preflight checks
+
+BlackGrid runs preflight before generating anything.
+
+Checks use four levels:
+
+```text
+OK = good
+INFO = useful note
+WARN = continue allowed, but pay attention
+FAIL = do not continue
+```
+
+A wrap can be safe to generate while still being unsafe to start. That is expected when the live server is already running.
+
+The first preflight pass checks:
+
+- install target is not the repo root, filesystem root, or source `WatchDog/` folder
+- WatchDog install folder is separate from the live server folder
+- checked-in ATM11 manifest has `file_id`, `display_name`, and `download_url`
+- `server.properties` can be read when wrapping an existing server
+- Minecraft `server-port`, query port, and RCON port do not collide with each other
+- enabled ports are already bound/listening on the host
+- a Java/server process appears to be using the existing server folder
+- `session.lock` exists at the server root or world root
+- `eula.txt` is present and accepted
+- a usable start script exists
+- the folder looks like Minecraft/ATM11 enough to be worth wrapping
+
+For wrap mode, ATM11 auto-update is generated disabled by default. The point is to let WatchDog run or observe the server first, then turn mutation-heavy behavior on later once the wrapper is trusted.
 
 ## Detached output
 
