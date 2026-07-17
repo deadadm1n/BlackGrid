@@ -3,10 +3,16 @@ setlocal
 
 cd /D "%~dp0"
 
-if exist ".venv\Scripts\python.exe" (
-    set "PYTHON=.venv\Scripts\python.exe"
-) else (
-    set "PYTHON=python"
+if not exist ".venv\Scripts\python.exe" (
+    python -m venv .venv
+)
+
+set "PYTHON=.venv\Scripts\python.exe"
+
+if not exist ".venv\blackgrid-ready" (
+    "%PYTHON%" -m pip install --upgrade pip
+    "%PYTHON%" -m pip install -r requirements.txt
+    echo ready> .venv\blackgrid-ready
 )
 
 "%PYTHON%" main.py %*
