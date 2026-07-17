@@ -14,53 +14,81 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import java.nio.file.Path;
 
 /**
- * In-game admin commands for the Discord chat bridge.
+ * In-game admin commands for the base WatchDog Helper mod.
  *
- * These are not player commands. They require gamemaster permission.
+ * Command shape:
+ * - /watchdog                    base helper status
+ * - /watchdog status             base helper status
+ * - /watchdog reload             reload bridge config
+ * - /watchdog discord            Discord bridge status
+ * - /watchdog discord status     Discord bridge status
+ * - /watchdog discord reload     reload bridge config
  *
- * Useful commands:
- * /watchdog discord status  - show what the bridge thinks its config is
- * /watchdog discord reload  - reload WatchDog/discord-chat.json without restarting Minecraft
- * /watchdogdiscord status   - same status command, shorter cursed alias
- * /watchdogdiscord reload   - same reload command, shorter cursed alias
+ * Aliases:
+ * - /wd                          same tree as /watchdog
+ * - /watchdogdiscord             legacy direct Discord bridge alias
+ *
+ * These are operator/debug commands, not normal player commands.
  */
 public class DiscordChatBridgeCommands {
+
+    private static final PermissionCheck.Require GAMEMASTER = new PermissionCheck.Require(Permissions.COMMANDS_GAMEMASTER);
 
     @SubscribeEvent
     public void onRegisterCommands(RegisterCommandsEvent event) {
         CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
 
-        // Direct command alias. Easy to type when debugging the bridge.
+        registerWatchDogRoot(dispatcher, "watchdog");
+        registerWatchDogRoot(dispatcher, "wd");
+        registerLegacyDiscordRoot(dispatcher);
+    }
+
+    private static void registerWatchDogRoot(CommandDispatcher<CommandSourceStack> dispatcher, String rootName) {
         dispatcher.register(
-                Commands.literal("watchdogdiscord")
-                        .requires(Commands.hasPermission(new PermissionCheck.Require(Permissions.COMMANDS_GAMEMASTER)))
+                Commands.literal(rootName)
+                        .requires(Commands.hasPermission(GAMEMASTER))
                         .executes(ctx -> sendStatus(ctx.getSource()))
                         .then(Commands.literal("status")
                                 .executes(ctx -> sendStatus(ctx.getSource())))
                         .then(Commands.literal("reload")
                                 .executes(ctx -> reload(ctx.getSource())))
-        );
-
-        // Nested command style that fits the rest of WatchDog.
-        dispatcher.register(
-                Commands.literal("watchdog")
-                        .requires(Commands.hasPermission(new PermissionCheck.Require(Permissions.COMMANDS_GAMEMASTER)))
                         .then(Commands.literal("discord")
-                                .executes(ctx -> sendStatus(ctx.getSource()))
+                                .executes(ctx -> sendDiscordStatus(ctx.getSource()))
                                 .then(Commands.literal("status")
-                                        .executes(ctx -> sendStatus(ctx.getSource())))
+                                        .executes(ctx -> sendDiscordStatus(ctx.getSource())))
                                 .then(Commands.literal("reload")
                                         .executes(ctx -> reload(ctx.getSource()))))
         );
     }
 
+    private static void registerLegacyDiscordRoot(CommandDispatcher<CommandSourceStack> dispatcher) {
+        dispatcher.register(
+                Commands.literal("watchdogdiscord")
+                        .requires(Commands.hasPermission(GAMEMASTER))
+                        .executes(ctx -> sendDiscordStatus(ctx.getSource()))
+                        .then(Commands.literal("status")
+                                .executes(ctx -> sendDiscordStatus(ctx.getSource())))
+                        .then(Commands.literal("reload")
+                                .executes(ctx -> reload(ctx.getSource())))
+        );
+    }
+
     private static int sendStatus(CommandSourceStack source) {
+        source.sendSuccess(() -> header("WatchDog Helper"), false);
+        source.sendSuccess(() -> line("Base commands", "/watchdog, /wd"), false);
+        source.sendSuccess(() -> line("Discord bridge", "/watchdog discord status, /watchdog discord reload"), false);
+        source.sendSuccess(() -> line("Legacy alias", "/watchdogdiscord"), false);
+        source.sendSuccess(() -> line("Config", configPathLabel()), false);
+        source.sendSuccess(() -> line("Bridge enabled", String.valueOf(DiscordChatBridgeConfig.get().enabled)), false);
+        return 1;
+    }
+
+    private static int sendDiscordStatus(CommandSourceStack source) {
         DiscordChatBridgeConfig.Settings settings = DiscordChatBridgeConfig.get();
-        Path path = DiscordChatBridgeConfig.path();
 
         // Keep this output boring and useful. This is for debugging config mistakes.
         source.sendSuccess(() -> header("WatchDog Discord chat bridge"), false);
-        source.sendSuccess(() -> line("Config", path == null ? "not loaded yet" : path.toString()), false);
+        source.sendSuccess(() -> line("Config", configPathLabel()), false);
         source.sendSuccess(() -> line("Enabled", String.valueOf(settings.enabled)), false);
         source.sendSuccess(() -> line("Minecraft -> Discord", String.valueOf(settings.sendMinecraftChatToDiscord)), false);
         source.sendSuccess(() -> line("Discord -> Minecraft", String.valueOf(settings.allowDiscordToMinecraft)), false);
@@ -78,9 +106,14 @@ public class DiscordChatBridgeCommands {
         DiscordChatBridgeConfig.reload(server);
         BridgeService.restart(server);
 
-        source.sendSuccess(() -> Component.literal("WatchDog Discord chat bridge config reloaded.")
+        source.sendSuccess(() -> Component.literal("WatchDog Helper bridge config reloaded.")
                 .withStyle(ChatFormatting.GREEN), true);
         return 1;
+    }
+
+    private static String configPathLabel() {
+        Path path = DiscordChatBridgeConfig.path();
+        return path == null ? "not loaded yet" : path.toString();
     }
 
     private static Component header(String text) {
