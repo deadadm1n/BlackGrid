@@ -9,6 +9,7 @@ SESSION="${WATCHDOG_TMUX_SESSION:-blackgrid-${SAFE_NAME:-server}}"
 CONFIG_PATH="${WATCHDOG_CONFIG:-config/wrapper.yaml}"
 
 cd "$ROOT"
+chmod +x "$ROOT/attach.sh" "$ROOT/stop.sh" 2>/dev/null || true
 
 if ! command -v tmux >/dev/null 2>&1; then
     echo "tmux is required so WatchDog can keep running after you disconnect."
