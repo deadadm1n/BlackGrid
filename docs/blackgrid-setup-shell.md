@@ -54,12 +54,13 @@ blackgrid_system_check.py = checks whether BlackGrid itself can start
 WatchDog/server_system_check.py = checks whether one selected server can start
 ```
 
-The BlackGrid startup check runs before the setup shell opens from `blackgrid.bat` or `blackgrid.sh`. It should stay tiny. Right now it checks only what BlackGrid itself needs to launch:
+The BlackGrid startup check runs before the setup shell opens from `blackgrid.bat` or `blackgrid.sh`. It checks the stuff BlackGrid needs before WatchDog gets to do its selected-server check:
 
 - Git
 - Python 3.10+
+- tmux
 
-Do not put Minecraft, Java, ATM11, tmux, Discord, port, manifest, or game-specific checks in the BlackGrid startup check. Those belong later, after the user picks what they are creating or wrapping.
+Do not put Minecraft, Java, ATM11, Discord, port, manifest, or game-specific checks in the BlackGrid startup check. Those belong later, after the user picks what they are creating or wrapping.
 
 The WatchDog server check runs right before WatchDog starts a server. It checks the selected generated config and that one server only:
 
