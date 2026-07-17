@@ -35,8 +35,13 @@ Default config:
   "botToken": "",
   "bridgeToken": "change-me",
   "outboundUrl": "http://127.0.0.1:8081/api/discord/minecraft-chat",
+  "inboundHost": "127.0.0.1",
+  "inboundPort": 25590,
+  "inboundDiscordPath": "/api/discord",
+  "statusPath": "/api/status",
   "sendMinecraftChatToDiscord": true,
   "allowDiscordToMinecraft": true,
+  "ignoreWebhookLikeMessages": true,
   "minecraftToDiscordFormat": "<{player}> {message}",
   "discordToMinecraftPrefix": "[Discord] "
 }
@@ -54,23 +59,21 @@ Default config:
 | `botToken` | Reserved for future direct bot mode. Prefer keeping the bot token in WatchDog, not inside the Minecraft mod. |
 | `bridgeToken` | Shared secret used between WatchDog/the Discord bot and the helper mod. Must not be `change-me`. |
 | `outboundUrl` | HTTP endpoint that receives Minecraft chat and forwards it to Discord. |
+| `inboundHost` | Local host/IP where the helper listens for Discord -> Minecraft messages. Default `127.0.0.1`. |
+| `inboundPort` | Local port where the helper listens. Default `25590`. |
+| `inboundDiscordPath` | HTTP path for Discord -> Minecraft messages. Default `/api/discord`. |
+| `statusPath` | HTTP path for helper status checks. Default `/api/status`. |
 | `sendMinecraftChatToDiscord` | Enables Minecraft -> Discord messages when the bridge is enabled. |
 | `allowDiscordToMinecraft` | Enables Discord -> Minecraft messages when the bridge is enabled. |
+| `ignoreWebhookLikeMessages` | Reserved safety switch for loop prevention when the bot side is added. |
 | `minecraftToDiscordFormat` | Message format sent outbound. Supports `{player}`, `{uuid}`, and `{message}`. |
 | `discordToMinecraftPrefix` | Prefix shown in Minecraft for Discord messages. |
 
-## NeoForge config still matters
+## NeoForge-side HTTP bridge
 
-The existing NeoForge config still controls whether the helper HTTP bridge starts:
+The Discord chat bridge can start the helper HTTP server from `WatchDog/discord-chat.json` alone.
 
-```text
-bridgeEnabled=true
-bridgeHost=127.0.0.1
-bridgePort=25590
-bridgeToken=<same shared secret>
-```
-
-`WatchDog/discord-chat.json` controls the Discord chat feature itself.
+That means the old NeoForge common config does not have to enable the generic helper bridge just for chat. The old config still works for legacy endpoints like `/api/veil` and `/api/broadcast`, but Discord chat has its own server-folder config now.
 
 ## Inbound Discord -> Minecraft
 
@@ -116,6 +119,19 @@ When a player chats in-game, the NeoForge chat event sends this payload to `outb
 ```
 
 The Discord bot side still needs to consume that endpoint and post to Discord. That belongs in WatchDog/the bot, not inside the Minecraft mod, so the server jar does not have to carry a Discord gateway client.
+
+## Commands
+
+Operators can inspect or reload the server-folder bridge config without restarting Minecraft:
+
+```text
+/watchdog discord status
+/watchdog discord reload
+/watchdogdiscord status
+/watchdogdiscord reload
+```
+
+Reloading re-reads `WatchDog/discord-chat.json` and restarts the helper HTTP listener if needed.
 
 ## Rule
 
