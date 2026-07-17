@@ -15,4 +15,6 @@ else
     exit 1
 fi
 
+"$PYTHON" blackgrid_system_check.py
+
 exec "$PYTHON" blackgrid.py "$@"
