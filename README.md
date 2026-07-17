@@ -47,6 +47,8 @@ BlackGrid is the platform.
 
 WatchDog is the wrapper.
 
+No one reads this shit....
+
 AetherReach is a server.
 
 Minecraft-specific code belongs in Minecraft-specific plugins, configs, docs, or helper mods. WatchDog core should stay as reusable as possible.
