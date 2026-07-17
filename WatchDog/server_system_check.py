@@ -135,7 +135,7 @@ def check_start_script(report: Report, server_dir: Path, configured: str) -> Non
 
 
 def check_java(report: Report, config: dict) -> None:
-    configured = str(get(config, "server.java_executable", "auto") or "auto")
+    configured = expand_env_default(str(get(config, "server.java_executable", "auto") or "auto"))
     required = int_or_default(get(config, "server.required_java_major", 0), 0)
     java = resolve_java(configured)
     if not java:
@@ -191,14 +191,14 @@ def check_enabled_ports(report: Report, config: dict, server_dir: Path) -> None:
 def check_enabled_auth(report: Report, config: dict) -> None:
     if bool(get(config, "web_panel.enabled", False)):
         host = str(get(config, "web_panel.host", "127.0.0.1"))
-        token = str(get(config, "web_panel.token", "") or "")
+        token = expand_env_default(str(get(config, "web_panel.token", "") or ""))
         if host in {"0.0.0.0", "::"} and not token:
             report.fail("Web panel is exposed without a token.", "Set WEB_PANEL_TOKEN or bind the panel to 127.0.0.1.")
         else:
             report.ok("Web panel auth/bind minimum check passed.")
 
     if bool(get(config, "discord_bot.enabled", False)):
-        token = str(get(config, "discord_bot.token", "") or "")
+        token = expand_env_default(str(get(config, "discord_bot.token", "") or ""))
         channel = int_or_default(get(config, "discord_bot.channel_id", 0), 0)
         if not token or token in {"PUT_TOKEN_HERE", "PUT_DISCORD_TOKEN_HERE"}:
             report.fail("Discord bot is enabled without a usable token.")
@@ -224,6 +224,16 @@ def resolve_java(configured: str) -> str | None:
         if candidate.exists():
             return str(candidate)
     return shutil.which("java")
+
+
+def expand_env_default(value: str) -> str:
+    text = str(value or "").strip()
+    match = re.fullmatch(r"\$\{([A-Za-z_][A-Za-z0-9_]*)(:-([^}]*))?\}", text)
+    if not match:
+        return text
+    name = match.group(1)
+    default = match.group(3) or ""
+    return os.environ.get(name) or default
 
 
 def java_major(java: str) -> int | None:
