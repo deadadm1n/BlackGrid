@@ -18,11 +18,28 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Executors;
 
+/**
+ * Tiny HTTP server that runs inside the NeoForge Minecraft server.
+ *
+ * Why this exists:
+ * - Discord cannot directly talk to Minecraft chat.
+ * - WatchDog/the Discord bot can send HTTP to this mod.
+ * - This mod can safely schedule work back onto Minecraft's server thread.
+ *
+ * There are two bridge families here:
+ * 1. Legacy WatchDog helper endpoints: /api/veil and /api/broadcast
+ * 2. Discord chat endpoint: /api/discord
+ *
+ * The Discord endpoint is controlled by WatchDog/discord-chat.json.
+ */
 public final class BridgeService {
 
     private static final Gson GSON = new Gson();
 
+    // The embedded HTTP server. Null means it is not running.
     private static HttpServer httpServer;
+
+    // The live Minecraft server instance. Needed so HTTP requests can broadcast messages in-game.
     private static MinecraftServer minecraftServer;
 
     private BridgeService() {}
@@ -31,40 +48,54 @@ public final class BridgeService {
         minecraftServer = server;
 
         DiscordChatBridgeConfig.Settings discordSettings = DiscordChatBridgeConfig.get();
+
+        // Old helper bridge toggle from NeoForge config.
         boolean legacyBridgeEnabled = Config.BRIDGE_ENABLED.get();
+
+        // New Discord bridge toggle from <server>/WatchDog/discord-chat.json.
         boolean discordBridgeEnabled = discordSettings.enabled && discordSettings.allowDiscordToMinecraft;
 
+        // If both bridge systems are off, do not open a port at all.
         if (!legacyBridgeEnabled && !discordBridgeEnabled) {
             WatchDogHelper.LOGGER.info("[WatchDog Helper Bridge] Bridge disabled. Enable NeoForge config bridgeEnabled or WatchDog/discord-chat.json enabled.");
             return;
         }
 
+        // Do not start two HTTP servers on the same port.
         if (httpServer != null) {
             return;
         }
 
+        // Discord bridge gets first pick because it owns the new server-folder config.
         String host = discordBridgeEnabled ? discordSettings.inboundHost : Config.BRIDGE_HOST.get();
         int port = discordBridgeEnabled ? discordSettings.inboundPort : Config.BRIDGE_PORT.getAsInt();
 
         try {
             httpServer = HttpServer.create(new InetSocketAddress(host, port), 0);
 
+            // Legacy endpoints for old WatchDog helper behavior.
             if (legacyBridgeEnabled) {
                 httpServer.createContext("/api/veil", BridgeService::handleVeil);
                 httpServer.createContext("/api/broadcast", BridgeService::handleBroadcast);
             }
 
+            // Discord -> Minecraft endpoint.
             if (discordBridgeEnabled) {
                 httpServer.createContext(discordSettings.inboundDiscordPath, BridgeService::handleDiscord);
+
+                // Keep /api/discord available as a fallback if the config uses a custom path.
                 if (!"/api/discord".equals(discordSettings.inboundDiscordPath)) {
                     httpServer.createContext("/api/discord", BridgeService::handleDiscord);
                 }
             }
 
+            // Status endpoint is handy for WatchDog health checks and human debugging.
             httpServer.createContext(discordSettings.statusPath, BridgeService::handleStatus);
             if (!"/api/status".equals(discordSettings.statusPath)) {
                 httpServer.createContext("/api/status", BridgeService::handleStatus);
             }
+
+            // Small worker pool because these requests should be tiny.
             httpServer.setExecutor(Executors.newFixedThreadPool(2));
             httpServer.start();
 
@@ -97,6 +128,17 @@ public final class BridgeService {
         handleMessageEndpoint(exchange, "broadcast");
     }
 
+    /**
+     * Discord -> Minecraft endpoint.
+     *
+     * Expected JSON:
+     * {
+     *   "token": "shared secret",
+     *   "channelId": "discord channel id",
+     *   "author": "Discord name",
+     *   "message": "text to show in Minecraft"
+     * }
+     */
     private static void handleDiscord(HttpExchange exchange) throws IOException {
         if (!requirePost(exchange)) {
             return;
@@ -109,16 +151,20 @@ public final class BridgeService {
         }
 
         DiscordChatBridgeConfig.Settings settings = DiscordChatBridgeConfig.get();
+
+        // Feature switch check. Disabled means no Discord messages go into Minecraft.
         if (!settings.enabled || !settings.allowDiscordToMinecraft) {
             sendJson(exchange, 503, error("discord chat bridge disabled"));
             return;
         }
 
+        // Shared-token check. This is the basic lock on the door.
         if (!isAuthorized(body, settings)) {
             sendJson(exchange, 403, error("unauthorized"));
             return;
         }
 
+        // Channel check. Prevents a bot from forwarding the wrong Discord channel into game chat.
         String channelId = getString(body, "channelId", "").trim();
         if (!settings.gameChatChannelId.isBlank() && !settings.gameChatChannelId.equals(channelId)) {
             sendJson(exchange, 403, error("wrong discord channel"));
@@ -139,10 +185,17 @@ public final class BridgeService {
             return;
         }
 
+        // Minecraft objects should be touched on the Minecraft server thread.
         server.execute(() -> broadcast(discordMessage(author, message)));
         sendJson(exchange, 202, ok("accepted"));
     }
 
+    /**
+     * Debug/health endpoint.
+     *
+     * GET is open because it only reports harmless status.
+     * POST requires the legacy bridge token because old WatchDog health checks may use POST.
+     */
     private static void handleStatus(HttpExchange exchange) throws IOException {
         if (!"GET".equalsIgnoreCase(exchange.getRequestMethod()) && !"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
             sendJson(exchange, 405, error("method not allowed"));
@@ -182,6 +235,10 @@ public final class BridgeService {
         sendJson(exchange, 200, response);
     }
 
+    /**
+     * Legacy message endpoints used by old helper features.
+     * These are not the new Discord chat bridge, but they share the same tiny HTTP server.
+     */
     private static void handleMessageEndpoint(HttpExchange exchange, String mode) throws IOException {
         if (!requirePost(exchange)) {
             return;
@@ -244,6 +301,9 @@ public final class BridgeService {
         }
     }
 
+    /**
+     * Legacy auth check that uses the NeoForge helper config token.
+     */
     private static boolean isAuthorized(JsonObject body) {
         String configuredToken = Config.BRIDGE_TOKEN.get();
         if (configuredToken == null || configuredToken.isBlank() || "change-me".equals(configuredToken)) {
@@ -255,6 +315,9 @@ public final class BridgeService {
         return configuredToken.equals(suppliedToken);
     }
 
+    /**
+     * Discord chat auth check that uses WatchDog/discord-chat.json.
+     */
     private static boolean isAuthorized(JsonObject body, DiscordChatBridgeConfig.Settings settings) {
         if (!settings.usableToken()) {
             WatchDogHelper.LOGGER.warn("[WatchDog Discord Chat] bridgeToken is not configured securely.");
