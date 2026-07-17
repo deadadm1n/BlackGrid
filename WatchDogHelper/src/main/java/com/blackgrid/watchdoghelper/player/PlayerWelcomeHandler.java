@@ -1,4 +1,5 @@
 package com.blackgrid.watchdoghelper.player;
+
 import java.util.concurrent.ThreadLocalRandom;
 import com.blackgrid.watchdoghelper.WatchDogHelper;
 import com.blackgrid.watchdoghelper.Config;
@@ -16,16 +17,35 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * Handles player login messages.
+ *
+ * What this does:
+ * - notices when a player joins
+ * - checks whether they have joined before
+ * - sends first-join or returning-player welcome text
+ * - optionally sends MOTD and rules
+ *
+ * The seen-player list is intentionally tiny and boring:
+ *   aetherreach/players/seen_players.json
+ *
+ * This is not security data. It is just so the server can say a different
+ * welcome message the first time someone joins.
+ */
 public class PlayerWelcomeHandler {
 
     private static final Path SEEN_PLAYERS_FILE =
             Path.of("aetherreach", "players", "seen_players.json");
 
+    // UUID strings already seen by this server.
     private static final Set<String> SEEN_PLAYERS = new HashSet<>();
+
+    // Avoid reading the file every single login.
     private static boolean loaded = false;
 
     @SubscribeEvent
     public void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        // Master switch. Default-off so dropping the mod in does not spam joins.
         if (!Config.WELCOME_ENABLED.get()) {
             return;
         }
@@ -47,6 +67,8 @@ public class PlayerWelcomeHandler {
             saveSeenPlayers();
         }
 
+        // Messages can contain multiple options split by || so the server does
+        // not say the exact same cursed line every time.
         String template = firstJoin
                 ? pickRandomMessage(Config.FIRST_JOIN_WELCOME_MESSAGE.get())
                 : pickRandomMessage(Config.RETURNING_WELCOME_MESSAGE.get());
@@ -74,6 +96,7 @@ public class PlayerWelcomeHandler {
                         .withStyle(firstJoin ? ChatFormatting.AQUA : ChatFormatting.GRAY)
         );
 
+        // Server owner decides whether this is private to the player or broadcast to everyone.
         if (Config.WELCOME_BROADCAST_TO_ALL.get()) {
             player.level().getServer().getPlayerList().broadcastSystemMessage(formatted, false);
             return;
@@ -99,6 +122,10 @@ public class PlayerWelcomeHandler {
         sendTitledLines(player, Config.RULES_TITLE.get(), Config.RULES_MESSAGE.get(), ChatFormatting.AQUA);
     }
 
+    /**
+     * Sends a title line, then each non-empty body line as a bullet.
+     * Config can use literal \n text, which gets turned into real lines here.
+     */
     private static void sendTitledLines(ServerPlayer player, String title, String raw, ChatFormatting titleColor) {
         if (raw == null || raw.isBlank()) {
             return;
@@ -139,6 +166,7 @@ public class PlayerWelcomeHandler {
                 return;
             }
 
+            // Tiny manual parser because the file is just ["uuid", "uuid"].
             String content = Files.readString(SEEN_PLAYERS_FILE)
                     .replace("[", "")
                     .replace("]", "")
@@ -192,6 +220,7 @@ public class PlayerWelcomeHandler {
             WatchDogHelper.LOGGER.warn("[WatchDog Helper] Failed to save seen players: {}", e.getMessage());
         }
     }
+
     private static String pickRandomMessage(String raw) {
         if (raw == null || raw.isBlank()) {
             return "";
