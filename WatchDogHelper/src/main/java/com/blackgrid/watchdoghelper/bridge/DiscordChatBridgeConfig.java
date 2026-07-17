@@ -23,7 +23,10 @@ public final class DiscordChatBridgeConfig {
     }
 
     public static synchronized void load(MinecraftServer server) {
-        Path serverRoot = server.getServerDirectory();
+        load(server.getServerDirectory());
+    }
+
+    public static synchronized void load(Path serverRoot) {
         Path dir = serverRoot.resolve(CONFIG_DIR_NAME);
         configPath = dir.resolve(CONFIG_FILE_NAME);
 
@@ -47,6 +50,10 @@ public final class DiscordChatBridgeConfig {
         }
     }
 
+    public static synchronized void reload(MinecraftServer server) {
+        load(server);
+    }
+
     public static synchronized Settings get() {
         return settings == null ? Settings.defaults() : settings;
     }
@@ -66,8 +73,13 @@ public final class DiscordChatBridgeConfig {
         public String botToken;
         public String bridgeToken;
         public String outboundUrl;
+        public String inboundHost;
+        public int inboundPort;
+        public String inboundDiscordPath;
+        public String statusPath;
         public boolean sendMinecraftChatToDiscord;
         public boolean allowDiscordToMinecraft;
+        public boolean ignoreWebhookLikeMessages;
         public String minecraftToDiscordFormat;
         public String discordToMinecraftPrefix;
 
@@ -79,8 +91,13 @@ public final class DiscordChatBridgeConfig {
             settings.botToken = "";
             settings.bridgeToken = "change-me";
             settings.outboundUrl = "http://127.0.0.1:8081/api/discord/minecraft-chat";
+            settings.inboundHost = "127.0.0.1";
+            settings.inboundPort = 25590;
+            settings.inboundDiscordPath = "/api/discord";
+            settings.statusPath = "/api/status";
             settings.sendMinecraftChatToDiscord = true;
             settings.allowDiscordToMinecraft = true;
+            settings.ignoreWebhookLikeMessages = true;
             settings.minecraftToDiscordFormat = "<{player}> {message}";
             settings.discordToMinecraftPrefix = "[Discord] ";
             return settings;
@@ -104,6 +121,14 @@ public final class DiscordChatBridgeConfig {
             if (outboundUrl == null || outboundUrl.isBlank()) {
                 outboundUrl = defaults.outboundUrl;
             }
+            if (inboundHost == null || inboundHost.isBlank()) {
+                inboundHost = defaults.inboundHost;
+            }
+            if (inboundPort < 1 || inboundPort > 65535) {
+                inboundPort = defaults.inboundPort;
+            }
+            inboundDiscordPath = normalizePath(inboundDiscordPath, defaults.inboundDiscordPath);
+            statusPath = normalizePath(statusPath, defaults.statusPath);
             if (minecraftToDiscordFormat == null || minecraftToDiscordFormat.isBlank()) {
                 minecraftToDiscordFormat = defaults.minecraftToDiscordFormat;
             }
@@ -116,6 +141,25 @@ public final class DiscordChatBridgeConfig {
 
         public boolean usableToken() {
             return bridgeToken != null && !bridgeToken.isBlank() && !"change-me".equalsIgnoreCase(bridgeToken.trim());
+        }
+
+        public String safeChannelLabel() {
+            if (gameChatChannelId == null || gameChatChannelId.isBlank()) {
+                return "not set";
+            }
+            return gameChatChannelId;
+        }
+
+        private static String normalizePath(String value, String fallback) {
+            if (value == null || value.isBlank()) {
+                return fallback;
+            }
+
+            String path = value.trim();
+            if (!path.startsWith("/")) {
+                path = "/" + path;
+            }
+            return path;
         }
     }
 }
