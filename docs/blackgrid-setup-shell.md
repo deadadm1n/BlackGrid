@@ -12,12 +12,46 @@ Server folder = the actual game server files
 
 After BlackGrid creates a server, that server should be able to run with its own detached WatchDog install. BlackGrid can be closed, deleted, ignored, or used later to build another server.
 
+## System checks
+
+There are two different checks on purpose:
+
+```text
+blackgrid_system_check.py = checks whether BlackGrid itself can start
+WatchDog/server_system_check.py = checks whether one selected server can start
+```
+
+The BlackGrid check runs before the setup shell opens from `blackgrid.bat` or `blackgrid.sh`. It checks the minimum stuff BlackGrid needs, not every possible game dependency:
+
+- Python version
+- repo files exist
+- WatchDog source files exist
+- ATM11 manifest is readable and has the required fields
+- repo folder is writable
+- basic platform helper tools, such as PowerShell on Windows or bash/tmux on Linux
+- basic outbound network access for downloading ServerFiles
+
+The WatchDog server check runs right before WatchDog starts a server. It checks the selected generated config and that one server only:
+
+- config file exists and parses as YAML
+- server directory exists
+- logs/state/backups/downloads/tmp paths are writable
+- start script exists or can be auto-detected
+- Java exists and meets the configured major version
+- enabled ports are valid and do not collide
+- enabled ports are not already bound/listening
+- exposed web panel is not enabled without a token
+- enabled Discord bot has minimum token/channel config
+
+This keeps the checks useful without turning startup into a giant audit of games the user is not even trying to run.
+
 ## First supported flow
 
 The first supported flow is intentionally boring:
 
 ```text
 Run blackgrid.bat or ./blackgrid.sh
+Run BlackGrid system check
 Pick: Create new Minecraft / ATM11 server
 Choose target folder
 Run preflight checks
@@ -31,6 +65,7 @@ There is also a safer migration flow for live servers:
 
 ```text
 Run blackgrid.bat or ./blackgrid.sh
+Run BlackGrid system check
 Pick: Wrap existing Minecraft / ATM11 server
 Point at the existing server folder
 Choose a separate WatchDog install folder
