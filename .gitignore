@@ -39,3 +39,13 @@ replay_pid*
 Thumbs.db
 *.swp
 *.swo
+
+# discord-bot: never commit deps or secrets
+discord-bot/node_modules/
+discord-bot/.env
+**/.env
+*.pem
+*.key
+
+# local python venv (no dot)
+WatchDog/venv/
