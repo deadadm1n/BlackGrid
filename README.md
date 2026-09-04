@@ -1,61 +1,95 @@
 # BlackGrid
 
-BlackGrid is a gaming community and server-hosting lab for people who want to play, learn, experiment, and eventually try running servers without already being a sysadmin goblin.
+BlackGrid is a gaming community and server-hosting lab. Play, learn, experiment, and run game servers without already being a sysadmin.
 
-Right now the public face is simple: BlackGrid is a gaming community that can grow into more than one server. Behind the scenes, the direction is bigger:
-
-- **BlackGrid** is the umbrella community, hosting/lab idea, and long-term brand.
-- **WatchDog** is the server wrapper and control layer that should eventually manage more than one kind of game server.
-- **AetherReach** is the first Minecraft server/community running under BlackGrid.
-- **WatchDog Helper** is the Minecraft-side helper mod used by AetherReach and future Minecraft servers that need in-game bridge features.
-
-Minecraft is where this started. It should not be where the idea gets stuck.
+- **BlackGrid** — the community, brand, and hosting-lab idea.
+- **WatchDog** — the server wrapper and control plane. Starts, stops, monitors, updates, backs up, and exposes control/status for game servers. Minecraft first, generic core by design.
+- **AetherReach** — the first Minecraft (ATM11) server running under BlackGrid.
+- **WatchDog Helper** — the Minecraft-side NeoForge mod (bridge, economy, commands, protections).
+- **discord-bot** — the Discord admin bridge. Gives an AI (or operator script) full server-admin control over Discord through a local HTTP API.
 
 ## Repo layout
 
-This repository currently contains the infrastructure for the first BlackGrid stack:
+- `blackgrid.py` + `blackgrid.bat` / `blackgrid.sh` — standalone setup shell for creating or wrapping server installs.
+- `WatchDog/` — Python wrapper, web panel, plugins, update tools, start scripts.
+- `WatchDogHelper/` — NeoForge Java helper mod.
+- `discord-bot/` — Node.js Discord admin bridge (`index.js`, HTTP control on `:3000`).
+- `configs/` — public config templates and manifests.
+- `recipes/` — provisioning recipes for BlackGrid-created servers.
+- `scripts/` — release helpers and remote WatchDog automation.
+- `docs/` — design docs, including `docs/ai-control.md` (machine + human control surfaces).
+- `branding/` `website/` — brand assets and site.
 
-- `blackgrid.py` - standalone setup shell for creating or wrapping server installs.
-- `blackgrid.bat` / `blackgrid.sh` - small launchers for the setup shell.
-- `WatchDog/` - Python server wrapper, web panel, automation plugins, update tools, and start scripts.
-- `WatchDogHelper/` - NeoForge Java helper mod for Minecraft servers. It provides the Minecraft-side bridge, economy/commands, MOTD/rules, and placement protections.
-- `configs/` - clean public config templates and manifests.
-- `recipes/` - provisioning recipes for BlackGrid-created servers.
-- `scripts/` - release helpers and remote WatchDog automation.
+Runtime files are never tracked: live server folders, logs, backups, venvs, jars, `node_modules/`, `.env` secrets.
 
-Runtime files are intentionally not tracked. The live AetherReach/ATM11 server folder, logs, backups, virtual environments, generated jars, and `.env` secrets stay local.
+## Quickstart
 
-For a fresh WatchDog install, copy `WatchDog/.env.example` to `WatchDog/.env` and fill in the local tokens.
+**WatchDog:**
 
-## Current direction
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env  # then fill in tokens
+python main.py
+```
 
-BlackGrid is being repositioned from “one Minecraft server project” into a broader gaming community and learning-focused server host.
+Windows PowerShell: `.venv\Scripts\Activate.ps1` instead of `source`.
 
-The near-term path is:
+**Discord bridge:**
 
-1. Keep AetherReach stable as the first Minecraft server.
-2. Keep WatchDog working as the wrapper/control plane.
-3. Start separating generic server-wrapper behavior from Minecraft/ATM11-specific behavior.
-4. Add cleaner docs and profiles so other server types can exist later.
-5. Grow BlackGrid’s appearance into the community/server-lab brand instead of making everything look like it only belongs to ATM11.
+```bash
+cd discord-bot
+npm install
+DISCORD_BOT_TOKEN=... node index.js
+```
 
-Long term, WatchDog should be able to run profiles for different game servers, such as Minecraft, CS/Source-style servers, and other dedicated servers that need start/stop/restart/log/update/status handling.
+Invite with Administrator (`permissions=8`), Server Members Intent + Message Content Intent enabled.
+
+## AI control surfaces
+
+Full detail: `docs/ai-control.md`.
+
+**Discord bridge** (`http://HOST:3000/discord-command`, `POST` JSON):
+
+| `type` | Does |
+|---|---|
+| `send-message` | Post to a channel |
+| `get-messages` | Read channel history |
+| `list-channels` / `list-members` / `list-roles` / `guild-info` | Inspect server |
+| `create-role` / `delete-role` / `update-role` | Manage roles (Admin perms supported) |
+| `assign-role` / `remove-role` | Manage membership |
+| `create-channel` / `delete-channel` / `delete-message` | Manage channels |
+| `kick` / `ban` / `unban` / `timeout` | Moderate |
+| Health: `GET /`, OAuth landing: `GET /auth/callback` | Status + invite flow |
+
+**WatchDog panel** (set `WEB_PANEL_AI_TOKEN`, send as `X-AI-Token` header; every call audit-logged):
+
+- Lifecycle: `POST /api/server/start|stop|kill`, `POST /api/restart` (all accept `?dry_run=1`)
+- Players: `POST /api/say`, `/api/players/kick|ban|unban|op|deop`, `/api/players/whitelist`, `GET /api/players`
+- Ops: `GET /api/plugins`, `POST /api/plugins/reload`, `GET /api/updates/status`, `POST /api/updates/check|download|apply|clear`, `GET /api/backups`, `GET /api/metrics`, `GET /api/events?since=`
+- Universal escape hatch: `POST /api/command` runs any `watchdog …` command or raw console input
+
+## Environment
+
+| Variable | Used by | Purpose |
+|---|---|---|
+| `DISCORD_BOT_TOKEN` | discord-bot, WatchDog discord plugin | Bot login |
+| `WEB_PANEL_TOKEN` | WatchDog | Human panel auth |
+| `WEB_PANEL_AI_TOKEN` | WatchDog | AI key (`X-AI-Token`), full scope, audited |
+| `MINECRAFT_EVENT_RECEIVER_TOKEN` | WatchDog + Helper | Helper→wrapper event auth (must be non-empty) |
+| `AETHERREACH_BRIDGE_TOKEN` | WatchDog + Helper | Wrapper→helper auth |
+| `ATM11_JAVA` / `JAVA_HOME` | WatchDog | Java 25 selection for ATM11 |
+| `ATM11_MANIFEST_URL` | WatchDog | Update manifest override |
+
+Copy `WatchDog/.env.example` to `WatchDog/.env`. Never commit `.env`.
 
 ## Design rule
 
-BlackGrid is the platform.
+BlackGrid is the platform. WatchDog is the wrapper. AetherReach is a server.
 
-WatchDog is the wrapper.
+Minecraft-specific code belongs in Minecraft-specific plugins, configs, docs, or helper mods. WatchDog core stays reusable.
 
-No one reads this shit....
-
-AetherReach is a server.
-
-Minecraft-specific code belongs in Minecraft-specific plugins, configs, docs, or helper mods. WatchDog core should stay as reusable as possible.
-
-## BlackGrid setup shell
-
-BlackGrid can be run as a standalone setup shell:
+## Setup shell
 
 ```powershell
 .\blackgrid.bat
@@ -65,104 +99,30 @@ BlackGrid can be run as a standalone setup shell:
 bash blackgrid.sh
 ```
 
-The first shell pass supports two intentionally boring flows:
+Two flows: create a new Minecraft/ATM11 server from the ServerFiles manifest, or wrap an existing one without moving it. Output is a detached server folder WatchDog owns. See `docs/blackgrid-setup-shell.md`.
 
-1. Create a new Minecraft / ATM11 server from the checked-in ServerFiles manifest.
-2. Wrap an existing Minecraft / ATM11 server without moving the live server folder.
+## Releases
 
-The output is a detached server folder with its own WatchDog install and start scripts. After setup, BlackGrid does not need to keep running. WatchDog owns that one server.
-
-See `docs/blackgrid-setup-shell.md` for the shape and safety notes.
-
-## Releasing WatchDog Helper
-
-WatchDog Helper jars are built by GitHub Actions and attached to GitHub Releases. To publish a new jar release from a clean working tree:
+Helper jars build on GitHub Actions from tags:
 
 ```powershell
-.\scripts\release-watchdog-helper.ps1 -Version 1.0.0
-```
-
-If PowerShell blocks local scripts on your PC, use the batch launcher instead:
-
-```powershell
-.\scripts\release-watchdog-helper.bat -Version 1.0.0
-```
-
-The batch launcher also accepts the version as the first argument:
-
-```powershell
-.\scripts\release-watchdog-helper.bat 1.0
-```
-
-The release helper builds the mod locally, creates a tag like `watchdog-helper-v1.0.0`, and pushes the tag. GitHub then builds the jar on Ubuntu and uploads it as a release asset.
-
-## Releasing WatchDog
-
-WatchDog wrapper and WatchDog Helper releases are published from tags:
-
-```powershell
-.\scripts\release-watchdog-wrapper.bat 0.1.0
 .\scripts\release-watchdog-helper.bat 0.1.0
+.\scripts\release-watchdog-wrapper.bat 0.1.0
 ```
 
-Inside the wrapper console, one command checks, downloads, and applies WatchDog plus the WatchDog Helper jar:
-
-```text
-wrapper update
-```
-
-You can also inspect or split the steps:
-
-```text
-wrapper update status
-wrapper update check
-wrapper update download
-wrapper update apply
-```
-
-Wrapper updates preserve local config, `.env`, logs, state, backups, downloads, `atm11`, and update staging folders. WatchDog Helper jar updates replace the helper jar in `atm11/mods` and back up the previous jar first.
-
-## AetherReach / ATM11 ServerFiles updates
-
-AetherReach currently runs on ATM11, so WatchDog can update the server pack from the checked-in manifest at:
-
-```text
-configs/atm11-serverfiles.json
-```
-
-When that manifest points at a newer ServerFiles `file_id`, the live wrapper downloads it automatically and queues it for the next scheduled restart. The update backs up the server first, preserves the configured local folders and custom jars, validates startup, and rolls back if validation fails.
-
-The manifest is refreshed by the scheduled GitHub Actions workflow in `.github/workflows/atm11-serverfiles-manifest.yml`. You can also run the scraper manually:
-
-```text
-python scripts/update-atm11-serverfiles-manifest.py
-```
+In the wrapper console, `wrapper update status|check|download|apply` manages wrapper + helper updates. ATM11 packs update from `configs/atm11-serverfiles.json` (refreshed by `.github/workflows/atm11-serverfiles-manifest.yml`, or `python scripts/update-atm11-serverfiles-manifest.py`).
 
 ## Discord linking
 
-WatchDog Helper exposes `/discord` in Minecraft. The player runs it in-game, then clicks the generated Discord OAuth link.
-
-The old `/discordlink` and `/linkdiscord` commands are kept as compatibility aliases. Discord admins can run:
-
-```text
-!ranks setup
-!ranks list
-!ranks sync
-```
-
-The bot needs Discord `Manage Roles`, and its bot role must be above the roles it manages. Server Members Intent must be enabled for the bot.
+Helper exposes `/discord` in-game; players link via OAuth. Admins: `!ranks setup|list|sync`. The bot needs Manage Roles above managed roles, plus Server Members Intent. Bridge details: `docs/watchdog-discord-chat-bridge.md`.
 
 ## Remote WatchDog
 
-SSH automation for the Ubuntu host lives in `scripts/remote-watchdog.bat`:
-
 ```powershell
 .\scripts\remote-watchdog.bat -Action status
-.\scripts\remote-watchdog.bat -Action cleanup
-.\scripts\remote-watchdog.bat -Action bootstrap -MigrateExisting
 .\scripts\remote-watchdog.bat -Action pull
 .\scripts\remote-watchdog.bat -Action start
 .\scripts\remote-watchdog.bat -Action stop
 ```
 
-`bootstrap -MigrateExisting` preserves live runtime paths such as `atm11`, `.env`, logs, state, backups, downloads, tmp, and updates, then points the remote `WatchDog` path at the Git checkout.
+`bootstrap -MigrateExisting` preserves live paths (`atm11`, `.env`, logs, state, backups, downloads, tmp, updates) and points the remote path at the Git checkout.
