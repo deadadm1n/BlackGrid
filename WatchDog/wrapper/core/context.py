@@ -29,7 +29,10 @@ class WrapperContext:
             self.downloads_dir,
             self.tmp_dir,
         ]:
-            path.mkdir(parents=True, exist_ok=True)
+            try:
+                path.mkdir(parents=True, exist_ok=True)
+            except OSError as exc:
+                raise RuntimeError(f"Cannot create WatchDog directory {path}: {exc}") from exc
         
         self.server_process = None
         self.server_output_task = None

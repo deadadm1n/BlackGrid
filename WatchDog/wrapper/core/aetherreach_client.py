@@ -15,7 +15,12 @@ class AetherReachClient:
         self.enabled = bool(config.get("bridges.aetherreach.enabled", config.get("aetherreach_bridge.enabled", False)))
         self.base_url = str(config.get("bridges.aetherreach.url", config.get("aetherreach_bridge.url", ""))).rstrip("/")
         self.token = str(config.get("bridges.aetherreach.token", config.get("aetherreach_bridge.token", "")))
-        self.timeout = float(config.get("bridges.aetherreach.timeout_seconds", config.get("aetherreach_bridge.timeout_seconds", 3)))
+        try:
+            self.timeout = float(config.get("bridges.aetherreach.timeout_seconds", config.get("aetherreach_bridge.timeout_seconds", 3)))
+        except (TypeError, ValueError):
+            self.timeout = 3.0
+        if self.timeout <= 0:
+            self.timeout = 3.0
 
     def ready(self) -> bool:
         return self.enabled and bool(self.base_url) and bool(self.token) and self.token != "change-me"
@@ -26,8 +31,11 @@ class AetherReachClient:
     async def broadcast(self, message: str) -> bool:
         return await self._post("/api/broadcast", {"message": message})
 
-    async def discord_message(self, author: str, message: str) -> bool:
-        return await self._post("/api/discord", {"author": author, "message": message})
+    async def discord_message(self, author: str, message: str, channel_id: str = "") -> bool:
+        payload = {"author": author, "message": message}
+        if channel_id:
+            payload["channelId"] = channel_id
+        return await self._post("/api/discord", payload)
 
     async def status(self) -> Optional[Dict[str, Any]]:
         if not self.ready():

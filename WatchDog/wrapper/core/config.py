@@ -32,7 +32,13 @@ class Config:
                 if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
                     value = value[1:-1]
 
-                os.environ[key] = value
+                if key.startswith("export "):
+                    key = key[len("export "):].strip()
+                    if not key:
+                        continue
+
+                # Real environment wins over .env so deploys can override files.
+                os.environ.setdefault(key, value)
 
     def _load(self) -> dict[str, Any]:
         if not self.path.exists():

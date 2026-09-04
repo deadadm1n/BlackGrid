@@ -12,6 +12,7 @@ from html import unescape
 from pathlib import Path
 
 from wrapper.core.commands import CommandResult
+from wrapper.core.plugin_base import WrapperPlugin as BaseWrapperPlugin
 from wrapper.core.server_process import ServerProcess
 
 
@@ -19,7 +20,7 @@ class UpdateCheckUnavailable(RuntimeError):
     pass
 
 
-class WrapperPlugin:
+class WrapperPlugin(BaseWrapperPlugin):
     name = "atm11_auto_update"
 
     ATM11_FILES_URL = "https://www.curseforge.com/minecraft/modpacks/all-the-mods-11/files/all"

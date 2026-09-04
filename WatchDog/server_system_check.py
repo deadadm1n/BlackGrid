@@ -116,11 +116,27 @@ def check_runtime_dirs(report: Report, base_dir: Path, config: dict) -> None:
 
 def check_start_script(report: Report, server_dir: Path, configured: str) -> None:
     if str(configured).lower() != "auto":
-        path = resolve_path(server_dir, str(configured))
-        if path.exists():
-            report.ok("Configured start script exists.", str(path))
-        else:
-            report.fail("Configured start script does not exist.", str(path))
+        # Mirror core _select_start_script: try companion suffixes too
+        # (e.g. configured "run" also matches run.bat / run.sh).
+        names = [str(configured)]
+        root, suffix = os.path.splitext(str(configured))
+        if suffix.lower() in {"", ".bat", ".cmd"}:
+            names += [root + ".bat", root + ".cmd", "startserver.bat", "run.bat"]
+        if suffix.lower() in {"", ".sh"}:
+            names += [root + ".sh", "startserver.sh", "run.sh"]
+        seen = set()
+        for name in names:
+            if name in seen:
+                continue
+            seen.add(name)
+            path = resolve_path(server_dir, name)
+            if path.exists():
+                report.ok("Configured start script exists.", str(path))
+                return
+        report.fail(
+            "Configured start script does not exist.",
+            str(resolve_path(server_dir, str(configured))),
+        )
         return
 
     candidates = [

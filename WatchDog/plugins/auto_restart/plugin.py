@@ -151,7 +151,7 @@ class Plugin(WrapperPlugin):
             except Exception as e:
                 ctx.logger.warning("[AutoRestart] Failed countdown message: %s", e)
 
-        await asyncio.sleep(previous_seconds)
+        await asyncio.sleep(previous_seconds or 0)
 
         await self.restart_server(ctx, reason="Scheduled restart", scheduled=True)
 
@@ -184,6 +184,10 @@ class Plugin(WrapperPlugin):
 
             await asyncio.sleep(int(self.settings.get("post_stop_delay_seconds", 10)))
 
+            cancel_output = getattr(ctx, "cancel_server_output_task", None)
+            if callable(cancel_output):
+                await cancel_output()
+
             new_server = ServerProcess(ctx)
             started = await new_server.start()
 
@@ -200,9 +204,14 @@ class Plugin(WrapperPlugin):
             if scheduled and getattr(ctx, "plugin_loader", None):
                 await ctx.plugin_loader.run_hook("after_scheduled_restart_success")
 
-            asyncio.create_task(ctx.server_process.read_output_forever())
+            # Mirror the boot path: fire after_server_start so every plugin
+            # (including this one, which re-arms its monitor if needed) runs.
+            # Do NOT spawn a monitor here; the calling monitor loop, if any,
+            # keeps watching, and after_server_start re-arms when none runs.
+            if getattr(ctx, "plugin_loader", None):
+                await ctx.plugin_loader.run_hook("after_server_start")
 
-            self.monitor_task = asyncio.create_task(self.monitor_server(ctx))
+            ctx.server_output_task = asyncio.create_task(ctx.server_process.read_output_forever())
 
         finally:
             self.restart_in_progress = False

@@ -1,5 +1,10 @@
+import asyncio
+import time
 from dataclasses import dataclass
 from typing import Awaitable, Callable, Dict, List, Optional, Type
+
+# A single slow plugin must never stall console parsing / startup validation.
+HANDLER_TIMEOUT_SECONDS = 60
 
 
 @dataclass
@@ -121,11 +126,28 @@ class EventBus:
             handler = item["handler"]
             owner = item.get("owner", "unknown")
 
+            started = time.monotonic()
             try:
-                await handler(event)
+                await asyncio.wait_for(handler(event), timeout=HANDLER_TIMEOUT_SECONDS)
+            except asyncio.TimeoutError:
+                self.logger.warning(
+                    "Event handler timed out after %ss: owner=%s event=%s",
+                    HANDLER_TIMEOUT_SECONDS,
+                    owner,
+                    type(event).__name__,
+                )
             except Exception:
                 self.logger.exception(
                     "Event handler failed: owner=%s event=%s",
                     owner,
                     type(event).__name__,
                 )
+            finally:
+                elapsed = time.monotonic() - started
+                if elapsed > 5:
+                    self.logger.warning(
+                        "Slow event handler %.1fs: owner=%s event=%s",
+                        elapsed,
+                        owner,
+                        type(event).__name__,
+                    )

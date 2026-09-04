@@ -132,19 +132,28 @@ class Plugin(WrapperPlugin):
 
         server_was_running = await self.stop_server_if_needed(bool(helper_pending))
 
-        for name, item, target in helper_pending:
-            await asyncio.to_thread(self.apply_minecraft_mod, item, target)
-            applied[name] = self.applied_record(item)
+        try:
+            for name, item, target in helper_pending:
+                await asyncio.to_thread(self.apply_minecraft_mod, item, target)
+                applied[name] = self.applied_record(item)
 
-        for name, item, target in wrapper_pending:
-            await asyncio.to_thread(self.apply_wrapper, item, target)
-            applied[name] = self.applied_record(item)
+            for name, item, target in wrapper_pending:
+                await asyncio.to_thread(self.apply_wrapper, item, target)
+                applied[name] = self.applied_record(item)
 
-        installed = self.load_json(self.state_path("installed"), {})
-        installed.update(applied)
-        self.save_json(self.state_path("installed"), installed)
-        self.save_json(self.state_path("pending"), {})
-        self.save_json(self.state_path("available"), {})
+            installed = self.load_json(self.state_path("installed"), {})
+            installed.update(applied)
+            self.save_json(self.state_path("installed"), installed)
+            self.save_json(self.state_path("pending"), {})
+            self.save_json(self.state_path("available"), {})
+        except Exception:
+            self.ctx.logger.exception("[UpdateManager] Apply failed; attempting to restart server")
+            if server_was_running:
+                try:
+                    await self.restart_server_after_update()
+                except Exception:
+                    self.ctx.logger.exception("[UpdateManager] Restart after failed apply also failed")
+            raise
 
         if server_was_running:
             await self.restart_server_after_update()

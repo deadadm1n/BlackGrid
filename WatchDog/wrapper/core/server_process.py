@@ -51,18 +51,23 @@ class ServerProcess:
             for event in parse_console_line(decoded):
                 await self.ctx.event_bus.publish(event)
 
-    async def send_command(self, command: str):
+    async def send_command(self, command: str) -> bool:
         if not self.process:
-            return
+            return False
 
         if self.process.returncode is not None:
-            return
+            return False
 
         if not self.process.stdin or self.process.stdin.is_closing():
-            return
+            return False
 
-        self.process.stdin.write((command.strip() + "\n").encode())
-        await self.process.stdin.drain()
+        try:
+            self.process.stdin.write((command.strip() + "\n").encode())
+            await self.process.stdin.drain()
+        except (BrokenPipeError, ConnectionResetError):
+            return False
+
+        return True
 
     def __init__(self, ctx):
         self.ctx = ctx
@@ -144,13 +149,19 @@ class ServerProcess:
                 )
             return ["cmd.exe", "/c", start_path.name]
 
-        if suffix in {".sh", ""}:
+        if suffix == ".sh" or (suffix == "" and os.name != "nt"):
             bash_path = shutil.which("bash")
             if not bash_path:
                 raise RuntimeError(
                     f"bash is required to run {start_path.name}; use a .bat/.cmd script on Windows or install bash"
                 )
             return [bash_path, start_path.name]
+
+        if suffix == "" and os.name == "nt":
+            raise RuntimeError(
+                f"Cannot run extensionless script {start_path.name} on Windows; "
+                "use a .bat/.cmd script or install bash and rename it with a .sh suffix"
+            )
 
         return [str(start_path)]
 
@@ -174,7 +185,14 @@ class ServerProcess:
         configured = str(self.ctx.config.get("server.java_executable", "auto") or "auto").strip()
 
         if configured and configured.lower() != "auto":
-            return str(self.ctx.resolve_path(configured) if not Path(configured).is_absolute() else Path(configured))
+            if Path(configured).is_absolute():
+                return str(Path(configured))
+            # Bare command names ("java", "java.exe") resolve via PATH, not the server dir.
+            if "/" not in configured and "\\" not in configured:
+                found = shutil.which(configured)
+                if found:
+                    return found
+            return str(self.ctx.resolve_path(configured))
 
         atm11_java = env.get("ATM11_JAVA")
         if atm11_java:
@@ -203,15 +221,20 @@ class ServerProcess:
             raise RuntimeError(f"Could not run Java executable '{java_executable}': {exc}") from exc
 
         output = result.stdout or ""
-        match = re.search(r'version "(\d+)(?:[._]\d+)?', output)
+        match = re.search(r'version "(\d+)(?:[._](\d+))?', output)
         if not match:
-            match = re.search(r"\b(\d+)(?:[._]\d+)?(?:\.\d+)*", output)
+            match = re.search(r"\b(\d+)(?:[._](\d+))?(?:\.\d+)*", output)
 
         if not match:
             self.ctx.logger.warning("Could not parse Java version output: %s", output.strip())
             return None
 
-        return int(match.group(1))
+        major = int(match.group(1))
+        # Legacy "1.x" versioning: 1.8 -> Java 8.
+        if major == 1 and match.group(2) is not None:
+            return int(match.group(2))
+
+        return major
 
     def _prepare_environment(self) -> dict[str, str]:
         env = os.environ.copy()
@@ -222,7 +245,14 @@ class ServerProcess:
         java_executable = self._resolve_java_executable(env)
         env["ATM11_JAVA"] = java_executable
 
-        required_major = int(self.ctx.config.get("server.required_java_major", 0) or 0)
+        try:
+            required_major = int(self.ctx.config.get("server.required_java_major", 0) or 0)
+        except (TypeError, ValueError):
+            self.ctx.logger.warning(
+                "Invalid server.required_java_major %r; skipping Java version check",
+                self.ctx.config.get("server.required_java_major"),
+            )
+            required_major = 0
         if required_major:
             detected_major = self._java_major_version(java_executable)
             if detected_major is not None and detected_major < required_major:
@@ -274,8 +304,6 @@ class ServerProcess:
             **self._subprocess_kwargs(server_dir, env),
         )
 
-        self.ctx.server_process = self
-
         loop = asyncio.get_running_loop()
         startup_deadline = loop.time() + timeout
         failure_matched = False
@@ -320,8 +348,14 @@ class ServerProcess:
                 if not failure_matched and any(pattern in decoded for pattern in success_patterns):
                     self.ctx.logger.info("Server startup validated")
                     self.startup_validated = True
+                    self.ctx.server_process = self
                     await self.ctx.event_bus.publish(ServerStartedEvent(raw=decoded))
                     return True
+
+        except asyncio.TimeoutError:
+            self.ctx.logger.error("Server startup read timed out after %s seconds", timeout)
+            await self.kill()
+            return False
 
         except asyncio.CancelledError:
             self.ctx.logger.warning("Startup task cancelled; stopping server")

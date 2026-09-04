@@ -34,10 +34,25 @@ class MinecraftEventReceiver:
     async def handle_event(self, request: web.Request):
         try:
             data = await request.json()
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, Exception):
             return web.json_response(
                 {"ok": False, "error": "invalid_json"},
                 status=400,
+            )
+
+        if not isinstance(data, dict):
+            return web.json_response(
+                {"ok": False, "error": "invalid_json"},
+                status=400,
+            )
+
+        if not self.token:
+            self.ctx.logger.warning(
+                "[MinecraftEventReceiver] Refusing event: receiver token is not configured"
+            )
+            return web.json_response(
+                {"ok": False, "error": "unauthorized"},
+                status=403,
             )
 
         if data.get("token") != self.token:

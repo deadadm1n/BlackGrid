@@ -74,6 +74,9 @@ web_panel:
   host: "127.0.0.1"
   port: 8080
   token: "${WEB_PANEL_TOKEN:-}"
+  # Dedicated AI key (X-AI-Token header). Separate from the human panel
+  # token so it can be rotated independently. Full scope, always audited.
+  ai_token: "${WEB_PANEL_AI_TOKEN:-}"
 
   # Panel auth settings.
   auth:
@@ -97,7 +100,7 @@ plugins:
     # Download behavior.
     auto_download: true
     auto_apply_on_scheduled_restart: true
-    manifest_url: "file:///home/deadadm1n/WatchDog/configs/atm11-serverfiles.json"
+    manifest_url: "${ATM11_MANIFEST_URL:-}"
     curseforge_scrape_fallback: true
     postpone_failed_file_ids: true
     keep_backups_days: 7

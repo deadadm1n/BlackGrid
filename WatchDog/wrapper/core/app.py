@@ -23,6 +23,27 @@ class WrapperApp:
     def register_core_commands(self, ctx, plugins: PluginLoader):
         registry = ctx.command_registry
 
+        def safe_int(value, default: int) -> int:
+            try:
+                return int(value)
+            except (TypeError, ValueError):
+                ctx.logger.warning("Invalid integer config value %r; using %s", value, default) if hasattr(ctx, "logger") else None
+                return default
+
+        async def cancel_output_task():
+            task = getattr(ctx, "server_output_task", None)
+            if task and not task.done():
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
+            ctx.server_output_task = None
+
+        # Expose for restart paths so old pipe readers never survive a restart.
+        ctx.cancel_server_output_task = cancel_output_task
+        ctx.safe_int = safe_int
+
         def current_server_state():
             server = getattr(ctx, "server_process", None)
             process = getattr(server, "process", None) if server else None
@@ -36,6 +57,8 @@ class WrapperApp:
                 return CommandResult(ok=False, message="ATM11 server is already running")
 
             ctx.server_stop_requested = False
+
+            await cancel_output_task()
 
             server = ServerProcess(ctx)
             started = await server.start()
@@ -203,14 +226,21 @@ class WrapperApp:
             if not process_alive:
                 return CommandResult(ok=False, message="Minecraft server is not running")
 
-            await ctx.server_process.send_command(command)
+            delivered = await ctx.server_process.send_command(command)
+            if not delivered:
+                return CommandResult(ok=False, message="Server is not accepting commands right now")
             return CommandResult(message=f"Sent Minecraft command: {command}")
 
         async def cmd_reload(args):
             ctx.shutdown_requested = True
             if ctx.server_process:
                 await ctx.server_process.stop()
-            os.execv(sys.executable, [sys.executable] + sys.argv)
+            try:
+                os.execv(sys.executable, [sys.executable] + sys.argv)
+            except OSError as exc:
+                ctx.shutdown_requested = False
+                return CommandResult(ok=False, message=f"Watchdog reload failed: {exc}")
+            return CommandResult(ok=False, message="Watchdog reload did not replace the process")
 
         registry.register("help", cmd_help, "List registered watchdog commands", usage="watchdog help")
         registry.register("commands", cmd_help, "List registered watchdog commands", usage="watchdog commands")
@@ -244,7 +274,7 @@ class WrapperApp:
         while True:
             try:
                 command = await asyncio.to_thread(input)
-            except EOFError:
+            except (EOFError, OSError):
                 logger.info("Console input closed; waiting for server process to exit")
                 if ctx.server_process:
                     await ctx.server_process.wait()
@@ -310,25 +340,33 @@ class WrapperApp:
             await plugins.register_events()
             await plugins.register_commands()
             
+            def boot_int(value, default: int, label: str) -> int:
+                try:
+                    return int(value)
+                except (TypeError, ValueError):
+                    logger.warning("Invalid %s %r; using %s", label, value, default)
+                    return default
+
             receiver_cfg = config.get("bridges.minecraft_events", config.get("minecraft_event_receiver", {}))
-            
+
             if receiver_cfg.get("enabled", True):
                 ctx.minecraft_event_receiver = MinecraftEventReceiver(
                     ctx=ctx,
                     host=receiver_cfg.get("host", "127.0.0.1"),
-                    port=int(receiver_cfg.get("port", 25591)),
+                    port=boot_int(receiver_cfg.get("port", 25591), 25591, "minecraft_events.port"),
                     token=receiver_cfg.get("token", ""),
                 )
                 await ctx.minecraft_event_receiver.start()
-            
+
             web_cfg = config.get("web_panel", {})
-            
+
             if web_cfg.get("enabled", False):
                 ctx.web_panel = WebPanel(
                     ctx=ctx,
                     host=web_cfg.get("host", "127.0.0.1"),
-                    port=int(web_cfg.get("port", 8080)),
+                    port=boot_int(web_cfg.get("port", 8080), 8080, "web_panel.port"),
                     token=web_cfg.get("token", ""),
+                    ai_token=web_cfg.get("ai_token", ""),
                 )
                 await ctx.web_panel.start()
             

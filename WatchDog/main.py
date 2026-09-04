@@ -3,6 +3,18 @@ import asyncio
 import sys
 
 
+def resolve_config_path(raw: str) -> str:
+    from pathlib import Path
+
+    candidate = Path(raw).expanduser()
+    if candidate.is_absolute():
+        return str(candidate)
+    # Mirror WrapperApp (wrapper/core/app.py): resolve relative paths
+    # against the repo root so the system check and wrapper read the same file.
+    repo_root = Path(__file__).resolve().parents[1]
+    return str(repo_root / candidate)
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="watchdog",
@@ -41,6 +53,7 @@ def run_system_check(config_path: str) -> None:
 
 async def main():
     args = parse_args()
+    args.config = resolve_config_path(args.config)
 
     if not args.skip_system_check:
         run_system_check(args.config)

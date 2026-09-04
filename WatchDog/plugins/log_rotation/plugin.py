@@ -47,8 +47,58 @@ class Plugin(WrapperPlugin):
         target = archive_dir / f"wrapper_{timestamp}.log"
 
         self.copy_log(log_file, target, logger)
+        self.truncate_live_log(log_file, logger)
 
-        # Do not truncate wrapper.log while Python logger may still own it.
+    def truncate_live_log(self, log_file: Path, logger=None):
+        # FileHandler keeps an open handle + offset, so a bare truncate would
+        # leave a sparse hole. Reopen the handler stream after truncating.
+        import logging
+
+        actual = None
+        if logger is not None:
+            actual = logger
+            while hasattr(actual, "logger"):
+                actual = actual.logger
+
+        handlers = getattr(actual, "handlers", []) if actual is not None else []
+        reopened = False
+        for handler in handlers:
+            if not isinstance(handler, logging.FileHandler):
+                continue
+            try:
+                if Path(handler.baseFilename).resolve() != log_file.resolve():
+                    continue
+            except OSError:
+                continue
+            handler.acquire()
+            try:
+                handler.flush()
+                if handler.stream:
+                    try:
+                        handler.stream.close()
+                    except Exception:
+                        pass
+                try:
+                    with log_file.open("w", encoding="utf-8"):
+                        pass
+                except OSError as exc:
+                    if logger:
+                        logger.warning("[LogRotation] Could not truncate %s: %s", log_file, exc)
+                    handler.setStream(log_file.open("a", encoding="utf-8"))
+                    continue
+                handler.setStream(log_file.open("a", encoding="utf-8"))
+                reopened = True
+            finally:
+                handler.release()
+
+        if not reopened:
+            # No live handler owns this file; plain truncate is safe.
+            try:
+                with log_file.open("w", encoding="utf-8"):
+                    pass
+            except OSError as exc:
+                if logger:
+                    logger.warning("[LogRotation] Could not truncate %s: %s", log_file, exc)
 
     def rotate_minecraft_logs(self, logs_dir: Path, archive_dir: Path, logger=None):
         if not logs_dir.exists():

@@ -116,6 +116,16 @@ class Plugin(WrapperPlugin):
                 return
 
             if content.startswith("!mc "):
+                if not bool(self.settings.get("mc_console_enabled", True)):
+                    await message.add_reaction("?")
+                    return
+
+                permissions = message.author.guild_permissions
+
+                if not permissions.manage_messages:
+                    await message.add_reaction("?")
+                    return
+
                 command = content[4:].strip()
 
                 if not command:
@@ -132,10 +142,16 @@ class Plugin(WrapperPlugin):
                 return
 
             safe_name = message.author.display_name.replace("@", "")
+            safe_content = content.replace("@everyone", "@\u200beveryone").replace("@here", "@\u200bhere")
 
             # Primary path:
             # Discord -> WatchDog -> helper HTTP bridge -> Minecraft
-            delivered = await ctx.aetherreach.discord_message(safe_name, content)
+            # channel_id is included so the helper's gameChatChannelId gate can verify it.
+            delivered = await ctx.aetherreach.discord_message(
+                safe_name,
+                safe_content,
+                channel_id=str(self.settings.get("channel_id", "")),
+            )
 
             if delivered:
                 return
@@ -163,6 +179,22 @@ class Plugin(WrapperPlugin):
         self.bot_task = asyncio.create_task(self.client.start(token))
         ctx.logger.info("[DiscordBot] Starting Discord bot task")
 
+    async def on_plugin_unload(self, ctx):
+        # Reload path: close the client quietly (no offline spam),
+        # so a fresh on_wrapper_start doesn't leak a second client.
+        self.ready.clear()
+        if self.client:
+            try:
+                await self.client.close()
+            except Exception:
+                pass
+        if self.bot_task and not self.bot_task.done():
+            self.bot_task.cancel()
+        self.client = None
+        self.channel = None
+        self.guild = None
+        self.bot_task = None
+
     async def on_wrapper_stop(self, ctx):
         if self.client:
             await self.send_discord(
@@ -182,16 +214,16 @@ class Plugin(WrapperPlugin):
 
         await ctx.server_process.send_command(command)
 
-    async def send_discord(self, message: str, channel_id=None):
+    async def send_discord(self, message: str, channel_id=None) -> bool:
         if not self.client:
-            return
+            return False
 
         try:
             await asyncio.wait_for(self.ready.wait(), timeout=15)
         except asyncio.TimeoutError:
             if self.ctx:
                 self.ctx.logger.warning("[DiscordBot] Timed out waiting for Discord client readiness")
-            return
+            return False
 
         channel = self.channel
 
@@ -201,10 +233,18 @@ class Plugin(WrapperPlugin):
             except Exception as e:
                 if self.ctx:
                     self.ctx.logger.warning("[DiscordBot] Could not fetch channel ID %s: %s", channel_id, e)
-                return
+                return False
 
-        if channel:
+        if not channel:
+            return False
+
+        try:
             await channel.send(message)
+            return True
+        except Exception:
+            if self.ctx:
+                self.ctx.logger.exception("[DiscordBot] Failed to send Discord message")
+            return False
 
     def server_display_name(self):
         return str(self.settings.get("server_name", "") or "Minecraft").strip()
@@ -234,8 +274,13 @@ class Plugin(WrapperPlugin):
                 self.ctx.logger.warning("[DiscordBot] Discord channel is missing; Minecraft chat not sent")
             return
 
+        safe_player = str(player).replace("@", "")
+        safe_message = str(message).replace("@everyone", "@\u200beveryone").replace("@here", "@\u200bhere")
+        if len(safe_message) > 1900:
+            safe_message = safe_message[:1900] + "..."
+
         try:
-            await self.channel.send(f"**[{self.server_display_name()}] {player}** > {message}")
+            await self.channel.send(f"**[{self.server_display_name()}] {safe_player}** > {safe_message}")
 
             if self.ctx:
                 self.ctx.logger.info(

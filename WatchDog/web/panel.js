@@ -1,6 +1,7 @@
-const TOKEN = new URLSearchParams(window.location.search).get("token")
-    || window.localStorage.getItem("watchdogToken")
-    || "";
+const TOKEN = window.localStorage.getItem("watchdogToken") || "";
+if (window.location.search.includes("token=")) {
+    window.history.replaceState({}, "", window.location.pathname);
+}
 let terminalSource = "wrapper";
 let lastCommandResult = "";
 let terminalAutoScroll = window.localStorage.getItem("watchdogTerminalAutoScroll") !== "false";

@@ -15,7 +15,8 @@ from wrapper.core.events import (
 # So console regex chat relay should stay disabled.
 CHAT_RELAY_FROM_LOGS = False
 
-RECENT_ERRORS = deque(maxlen=25)
+RECENT_ERRORS = deque(maxlen=200)
+RECENT_ERROR_TIMES = deque(maxlen=200)
 
 
 # Handles:
@@ -88,12 +89,18 @@ def clean_console_line(line: str) -> str:
 
 
 def should_emit_error(raw: str) -> bool:
-    normalized = clean_console_line(raw)
+    import time
 
-    if normalized in RECENT_ERRORS:
-        return False
+    normalized = clean_console_line(raw)
+    now = time.monotonic()
+
+    # Drop repeats of the same line within 10 minutes, even after eviction pressure.
+    for old_raw, old_ts in zip(list(RECENT_ERRORS), list(RECENT_ERROR_TIMES)):
+        if old_raw == normalized and now - old_ts < 600:
+            return False
 
     RECENT_ERRORS.append(normalized)
+    RECENT_ERROR_TIMES.append(now)
     return True
 
 
@@ -118,6 +125,10 @@ def classify_error(line: str):
     is_exception = JAVA_EXCEPTION_RE.search(clean) is not None
     is_caused_by = CAUSED_BY_RE.search(clean) is not None
 
+    # NOTE: plain is_exception alone does NOT notify on purpose:
+    # non-fatal loader noise (e.g. mixin ClassNotFoundException) must stay
+    # quiet. The elif is_exception branch below only runs when some other
+    # signal already tripped should_notify.
     should_notify = is_fatal_level or is_missing_dep or is_crash or is_caused_by
 
     if not should_notify:
@@ -240,12 +251,6 @@ def parse_console_line(line: str):
                 raw=line,
                 reason=format_error_for_discord(error),
             )
-        )
-
-    if len(events) > 1:
-        print(
-            f"[ParserDebug] Events: {[type(e).__name__ for e in events]} | {line}",
-            flush=True,
         )
 
     return events

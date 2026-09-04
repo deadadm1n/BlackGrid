@@ -25,6 +25,12 @@ class AutoUpdatePluginCore:
             ctx.logger.info('[AutoUpdate] No update found')
             return
         ctx.logger.info('[AutoUpdate] Update found: %s', latest.get('display_name'))
+        if not latest.get('download_url'):
+            ctx.logger.warning(
+                '[AutoUpdate] Skipping update %s: no download_url configured',
+                latest.get('display_name'),
+            )
+            return
         backup_path = self.create_backup(ctx)
         pending = {
             'from_file_id': installed_id,
@@ -82,7 +88,12 @@ class AutoUpdatePluginCore:
                 'download_url': self.settings.get('download_url', ''),
             }
         if mode == 'curseforge_api':
-            raise NotImplementedError('CurseForge API mode needs your API key/project setup.')
+            # Degrade to a clear status instead of killing the wrapper boot hook.
+            return {
+                'file_id': 0,
+                'display_name': 'CurseForge API mode is not implemented',
+                'download_url': '',
+            }
         raise ValueError(f'Unknown auto_update mode: {mode}')
 
     def perform_update(self, ctx, latest: dict):
@@ -143,12 +154,29 @@ class AutoUpdatePluginCore:
         shutil.copytree(backup_path, ctx.server_dir)
 
     def read_json(self, path: Path, default):
-        if not path.exists(): return default
-        return json.loads(path.read_text(encoding='utf-8'))
+        if not path.exists():
+            return default
+        try:
+            return json.loads(path.read_text(encoding='utf-8'))
+        except (json.JSONDecodeError, UnicodeDecodeError, OSError):
+            return default
 
     def write_json(self, path: Path, data: dict):
+        import os
+        import tempfile
+
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(data, indent=4), encoding='utf-8')
+        fd, tmp_name = tempfile.mkstemp(dir=str(path.parent), suffix=".tmp")
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                handle.write(json.dumps(data, indent=4))
+            os.replace(tmp_name, path)
+        except Exception:
+            try:
+                os.unlink(tmp_name)
+            except OSError:
+                pass
+            raise
 
     def write_update_log(self, ctx, message: str):
         line = f'{dt.datetime.now().isoformat()} | {message}\n'

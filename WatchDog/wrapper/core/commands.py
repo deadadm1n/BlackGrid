@@ -23,6 +23,8 @@ class CommandSpec:
     handler: Callable
     owner: str = "core"
     usage: str = ""
+    # NOTE: the web panel is single-tier (any authenticated caller is admin),
+    # so this field is informational until per-scope API keys exist.
     permission: str = "admin"
 
 
@@ -101,10 +103,18 @@ class CommandRegistry:
             )
 
         spec = self.commands[command_name]
-        result = spec.handler(args)
+        try:
+            result = spec.handler(args)
+        except Exception as exc:
+            self.logger.exception("Command handler failed: %s", command_name)
+            return CommandResult(ok=False, message=f"Command failed: {exc}")
 
         if hasattr(result, "__await__"):
-            result = await result
+            try:
+                result = await result
+            except Exception as exc:
+                self.logger.exception("Command handler failed: %s", command_name)
+                return CommandResult(ok=False, message=f"Command failed: {exc}")
 
         if isinstance(result, CommandResult):
             return result

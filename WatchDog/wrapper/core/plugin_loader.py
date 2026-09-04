@@ -9,6 +9,7 @@ class PluginLoader:
     def __init__(self, ctx):
         self.ctx = ctx
         self.plugins = {}
+        self._module_names = {}
 
     async def load_plugins(self):
         self.plugins.clear()
@@ -40,6 +41,12 @@ class PluginLoader:
         settings = plugins_config.get(plugin_name)
 
         if settings is None and explicit:
+            # Explicit operator reload may hot-load a plugin that has no
+            # config entry yet. Allowed by design (see contract tests), but
+            # logged loudly since it executes new code paths.
+            self.ctx.logger.warning(
+                "Hot-loading plugin with no config entry: %s", plugin_name
+            )
             settings = {"enabled": True}
         elif settings is None:
             settings = {}
@@ -65,7 +72,11 @@ class PluginLoader:
             raise RuntimeError(f"Could not load plugin spec: {plugin_name}")
 
         module = importlib.util.module_from_spec(spec)
+        old_module_name = self._module_names.get(plugin_name)
+        if old_module_name and old_module_name in sys.modules:
+            del sys.modules[old_module_name]
         sys.modules[module_name] = module
+        self._module_names[plugin_name] = module_name
         spec.loader.exec_module(module)
 
         plugin = module.Plugin(settings=settings)
@@ -100,6 +111,10 @@ class PluginLoader:
         self.remove_commands(plugin_name)
 
         self.plugins.pop(plugin_name, None)
+
+        module_name = self._module_names.pop(plugin_name, None)
+        if module_name and module_name in sys.modules:
+            del sys.modules[module_name]
 
         self.ctx.logger.info("Unloaded plugin: %s", plugin_name)
 
@@ -235,11 +250,10 @@ class PluginLoader:
                 await method(self.ctx, *args)
             except Exception:
                 self.ctx.logger.exception(
-                    "Plugin hook failed: plugin=%s hook=%s",
+                    "Plugin hook failed: plugin=%s hook=%s; continuing with remaining plugins",
                     plugin_name,
                     hook_name,
                 )
-                raise
 
     async def run_plugin_hook(self, plugin_name: str, hook_name: str, *args):
         plugin = self.plugins.get(plugin_name)
@@ -253,7 +267,14 @@ class PluginLoader:
             return
 
         self.ctx.logger.debug("Running hook %s on %s", hook_name, plugin_name)
-        await method(self.ctx, *args)
+        try:
+            await method(self.ctx, *args)
+        except Exception:
+            self.ctx.logger.exception(
+                "Plugin hook failed: plugin=%s hook=%s",
+                plugin_name,
+                hook_name,
+            )
 
     def list_plugins(self):
         return list(self.plugins.keys())
