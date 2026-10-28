@@ -1,16 +1,16 @@
 {
   "atm11_serverfiles": {
-    "file_id": 9187108,
-    "display_name": "ServerFiles-0.12.0-beta.zip Latest release R 26.1.2 NeoForge Oct 15, 2026",
-    "page_url": "https://www.curseforge.com/minecraft/modpacks/all-the-mods-11/files/9187108",
-    "download_url": "https://www.curseforge.com/api/v1/mods/1148445/files/9187108/download",
-    "discovered_at": "2026-10-15T04:36:17.650993+00:00",
-    "previous_file_id": 9094487,
+    "file_id": 9343842,
+    "display_name": "ServerFiles-0.13.0-beta.zip Latest release R 26.1.2 NeoForge Oct 27, 2026",
+    "page_url": "https://www.curseforge.com/minecraft/modpacks/all-the-mods-11/files/9343842",
+    "download_url": "https://www.curseforge.com/api/v1/mods/1148445/files/9343842/download",
+    "discovered_at": "2026-10-28T15:04:51.559127+00:00",
+    "previous_file_id": 9187108,
     "source": "curseforge_files_page",
-    "metadata_source_url": "https://r.jina.ai/http://https://www.curseforge.com/minecraft/modpacks/all-the-mods-11/files/all",
-    "changelog_file_id": 9187064,
-    "changelog_url": "https://www.curseforge.com/minecraft/modpacks/all-the-mods-11/files/9187064/changelog",
-    "changelog_source_url": "https://r.jina.ai/http://https://www.curseforge.com/minecraft/modpacks/all-the-mods-11/files/9187064/changelog",
-    "changelog": "Type\n\nName\n\nGame Versions\n\nMod Loaders\n\nSize\n\nDownloads\n\nUploaded\n\nR\n\nServerFiles-0.12.0-beta.zip\n\n26.1.2\n\nNeoForge\n\n593.8 MB\n\n3\n\nOct 15, 2026\n\n[](https://www.curseforge.com/minecraft/modpacks/all-the-mods-11/download/9187108 \"Download file\")"
+    "metadata_source_url": "https://www.curseforge.com/minecraft/modpacks/all-the-mods-11/files/all",
+    "changelog_file_id": null,
+    "changelog_url": null,
+    "changelog_source_url": null,
+    "changelog": null
   }
 }
