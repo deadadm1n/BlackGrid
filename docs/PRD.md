@@ -26,6 +26,7 @@ BG-012 Discord administrator vote cancellation: any currently verified Discord g
 BG-013 Voting duration: every ballot must remain open for at least 24 hours and no more than 72 hours (three days), calculated from the recorded opening time; no shortened or extended ballot outside these limits.
 BG-014 Mandatory vote notification: every ballot must produce a Discord announcement when opened, with proposal, scope, voting controls, and exact closing time; notification failures must be retried and surfaced, never silently ignored.
 BG-015 World-integrity change gate: before a server-changing operation, record a deterministic SHA-256 manifest of the relevant world folder, produce and validate a restorable snapshot, then repeat the manifest and integrity checks after the changed server starts and reaches a healthy save point. Unexpected changes or validation failures trigger controlled rollback and a public failure reason; legitimate Minecraft writes must not be mistaken for corruption.
+BG-016 BlackGrid Sentinel: any proposed instance software/configuration change must be tested first against a disposable, isolated, player-inaccessible validation instance using a consistent copy of relevant world and server configuration. Sentinel measures startup, world validity, logs, compatibility, resource use and performance using deterministic checks; OpenCode is optional for interpretation. Test worlds never replace production directly and failed tests do not mutate production.
 
 ## 3. Users and roles
 - **Owner (root of trust):** full policy-setting and emergency recovery rights, subject to authentication and break-glass safeguards.
@@ -99,6 +100,19 @@ Operational transitions: `RUNNING -> STOPPING -> STOPPED -> ARCHIVED`; failures 
 
 ### Provisioning saga
 Reserve capacity/port -> prepare storage -> create isolated instance -> validate startup/health -> create/reconcile Discord resources -> publish. Each step persisted with idempotency keys. On error release reservations where safe and retain potentially valuable instance/world data. Retries must not create duplicate channels or instances.
+
+### BlackGrid Sentinel — isolated change validation
+A **micro-server** means a short-lived, capacity-limited, player-inaccessible Minecraft test instance managed by the BlackGrid Supervisor; it is not the permanent host of BlackGrid Core. The validation instance starts with the same Minecraft version, Java runtime requirements, loader, mods/plugins and relevant configuration as production and a consistent snapshot of the world or appropriately selected representative test dataset. A lightweight sandbox must not be assumed capable of booting a full modpack: each test requires adequate minimum RAM/CPU/disk and a bounded timeout. If resources are insufficient, report `VALIDATION_UNAVAILABLE`, queue the change or require owner review; never auto-pass.
+
+**Process:** Snapshot/hash the production world at a consistent point -> create isolated test instance and apply proposed change **only to the test copy** -> boot -> read startup logs and crashes -> wait for healthy world load -> sample TPS/MSPT, JVM/GC, CPU/RAM/disk and log errors -> check region/NBT structure and per-file world hash manifest changes within approved scope -> produce immutable structured result -> shut down/dispose of ephemeral compute, retaining required test evidence. On failure, mark implementation blocked and notify Discord with a concise reason. On success, prepare a separate production change with its own pre-change verified recovery snapshot and post-start integrity verification (see World-integrity change gate). If production fails despite passing staging, restore safely and report failure.
+
+**Scope/limitations:** Starting a clone without active players cannot demonstrate live concurrency performance or catch all corruption. Treat small/sampled worlds as smoke tests, not proof that a full world or full player load is safe. Never reject solely because TPS fluctuates or expected world files change; compare to appropriate baseline and evaluate actual world validity. Keep resource/performance thresholds configurable per server template. Default to conservative decisions and clearly report 'inconclusive' rather than guessing.
+
+**Native monitoring:** BlackGrid owns its event/log collector, process metrics, health probes, structured crash classification, world manifest/region/NBT checker, validation policies, dashboard history and AI-readable reports. Optionally integrate spark (profiling), Prometheus-compatible collectors/exporters, and existing NBT/MCA validation libraries under explicit license/security review rather than reinventing JVM profiling or binary parsers blindly. OpenCode receives read-only sanitized evidence; it may propose follow-up work but cannot manufacture a passing validation result.
+
+**Validation states:** `PENDING -> SNAPSHOTTING -> PROVISIONING -> BOOTING -> OBSERVING -> VERIFYING -> PASSED | FAILED | INCONCLUSIVE | VALIDATION_UNAVAILABLE`. Each state and test evidence is durable, jobs idempotent, and temporary credentials and instance runtime are disposed after completion. No direct public network access to the test instance, no Discord chat bridge, and no permanent player connections.
+
+**Acceptance:** bad plugin preventing startup fails in staging without touching production; corrupt region fails deterministic validation; good change passes a matching-environment smoke test; undersized sandbox is inconclusive/unavailable rather than false pass; production is gated behind staging and production rollback remains available; telemetry and actionable failure reasons remain available without OpenCode.
 
 ### World-integrity change gate (before/after startup)
 Every *server-changing operation* initiated by the owner, governance, or AI uses a protected before/after world-integrity check. The goal is to detect unexpected world modifications or corruption **caused by a change**, not to require a world folder to remain byte-identical while Minecraft runs.
@@ -174,6 +188,7 @@ Quiesce instance -> create immutable world snapshot -> verify snapshot readabili
 8. Restore drill: recover core DB, world data and Discord resource registry into a clean staging environment.
 9. Version compatibility: unsupported mod-loader features fail with clear capability errors, never silently run Paper-specific commands.
 10. Deployment rollback: broken release recovers without OpenCode.
+12. Sentinel gate: a change fails safely when an isolated test instance crashes or detects bad world data, and production is not mutated; a missing resource budget yields an inconclusive/unavailable result rather than a fabricated pass.
 11. World-integrity gate: every server-changing operation records a consistent pre-change world-folder hash manifest and validated rollback backup, then a post-start manifest and world-health check; unexpected changes fail the operation, trigger safe rollback when possible, and notify Discord with the reason. Normal startup writes do not cause automatic false positives.
 
 ## 11. Explicitly deferred / open decisions
