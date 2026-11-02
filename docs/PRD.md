@@ -25,6 +25,7 @@ BG-011 Source-driven changes: changes to security, permissions, governance rules
 BG-012 Discord administrator vote cancellation: any currently verified Discord guild administrator may unilaterally cancel an open community ballot. Cancellation is immediate, final for that ballot, audited and cannot be overridden by voters or AI.
 BG-013 Voting duration: every ballot must remain open for at least 24 hours and no more than 72 hours (three days), calculated from the recorded opening time; no shortened or extended ballot outside these limits.
 BG-014 Mandatory vote notification: every ballot must produce a Discord announcement when opened, with proposal, scope, voting controls, and exact closing time; notification failures must be retried and surfaced, never silently ignored.
+BG-015 Mandatory pre/post change backups and integrity verification: before and after every server-state-changing operation, capture consistent ZIP-format backups and record SHA-256 hashes; verify archive readability and Minecraft world integrity separately. A hash mismatch between different pre/post backups is expected and is not alone proof of corruption. Fail closed on missing/invalid pre-change backup.
 
 ## 3. Users and roles
 - **Owner (root of trust):** full policy-setting and emergency recovery rights, subject to authentication and break-glass safeguards.
@@ -99,6 +100,20 @@ Operational transitions: `RUNNING -> STOPPING -> STOPPED -> ARCHIVED`; failures 
 ### Provisioning saga
 Reserve capacity/port -> prepare storage -> create isolated instance -> validate startup/health -> create/reconcile Discord resources -> publish. Each step persisted with idempotency keys. On error release reservations where safe and retain potentially valuable instance/world data. Retries must not create duplicate channels or instances.
 
+### Mandatory change backup / integrity protocol
+Applies to every **mutating Minecraft instance operation** (including vote-approved modifications, AI-assisted changes, plugin/mod installs and updates, server configuration edits, world resets, server version changes and player-data edits), regardless of whether started by owner, Discord governance or AI. Monitoring and read-only inspection do not trigger backups.
+
+1. Acquire per-instance change lock; coordinate server save/flush and a consistent snapshot (quiesce/stop when required). Do not create inconsistent live ZIPs of changing world files.
+2. Before mutation, create a ZIP backup of the affected instance's world(s), player data, configuration and plugin/mod state (as applicable). Compute SHA-256 of the finalized ZIP; record bytes, creation time, immutable backup ID, operation ID and instance ID in protected metadata.
+3. Validate ZIP structural integrity/CRC, test extraction into isolated temporary storage, inspect required Minecraft world files and world data (including NBT/region structure using appropriate validators); optionally compare file manifest and run a targeted restore validation. A ZIP checksum alone cannot demonstrate Minecraft map health.
+4. Only proceed if pre-change backup passes required checks and is stored outside AI/instance write access. Failed or missing verification blocks the change.
+5. Perform the approved change, then perform health/startup checks and create a second **consistent** ZIP backup of the resulting state. Record its independent SHA-256 and run the same archive/world validation.
+6. Compare pre/post file manifests and domain-specific world invariants to identify **unexpected** loss or corruption. **Do not compare pre/post whole-ZIP hashes for equality:** legitimate changes, timestamps and ZIP metadata change the digest.
+7. If post-change verification fails, stop further dependent operations, alert owner/Discord as appropriate, preserve both artifacts and logs, and offer controlled rollback to the known-good pre-change backup; any rollback must preserve evidence and avoid overwriting an existing world unarchived.
+8. Support content-addressed immutable backup records, periodic restore drills, integrity rechecking of stored archives, quotas and alerting for insufficient backup storage. Backups are recovery artifacts, not the sole corruption detector.
+
+**Acceptance:** tampering with a stored archive changes its recomputed SHA-256; a truncated archive fails extraction/CRC; a ZIP with valid CRC but malformed world data fails a world validator; normal intended world changes are not misclassified just because ZIP hashes differ; a failed preflight prevents mutation; failed postflight triggers incident handling; concurrent changes cannot race snapshot creation.
+
 ### World reset
 Quiesce instance -> create immutable world snapshot -> verify snapshot readability/restore test as policy dictates -> generate new world -> verify -> restart. Rollback restores previous world while preserving a snapshot of the replacement; no data wipe.
 
@@ -160,6 +175,7 @@ Quiesce instance -> create immutable world snapshot -> verify snapshot readabili
 8. Restore drill: recover core DB, world data and Discord resource registry into a clean staging environment.
 9. Version compatibility: unsupported mod-loader features fail with clear capability errors, never silently run Paper-specific commands.
 10. Deployment rollback: broken release recovers without OpenCode.
+11. Backup integrity gate: every mutating server action produces verified, SHA-256-hashed pre/post ZIP snapshots; tests detect both archive tampering and valid-ZIP/invalid-world cases, block unsafe changes and retain recovery evidence.
 
 ## 11. Explicitly deferred / open decisions
 - Exact server hardware, per-instance resource presets and owner-set defaults.
