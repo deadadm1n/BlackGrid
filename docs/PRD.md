@@ -22,6 +22,7 @@ BG-008 Capacity is configurable from owner dashboard, especially **maximum concu
 BG-009 No breaking the host: resource reservations, isolated instance runtimes, rollback, and host headroom are mandatory.
 BG-010 Emergency access: an independent authenticated break-glass path remains when website, Discord, or OpenCode is unavailable.
 BG-011 Source-driven changes: changes to security, permissions, governance rules and AI capabilities follow explicit owner-authorized release workflows; AI cannot alter its own guardrails.
+BG-012 Discord administrator vote cancellation: any currently verified Discord guild administrator may unilaterally cancel an open community ballot. Cancellation is immediate, final for that ballot, audited and cannot be overridden by voters or AI.
 
 ## 3. Users and roles
 - **Owner (root of trust):** full policy-setting and emergency recovery rights, subject to authentication and break-glass safeguards.
@@ -46,6 +47,8 @@ One guild can span the network. BlackGrid tracks Discord IDs for guild, roles, c
 
 ### 4.4 Community governance
 Players can propose **any Minecraft-related change**; eligibility review and policy decide whether it can be balloted and automatically executed. Examples: server creation/type, server retirement/shutdown (not deletion), world reset with preserved snapshot, difficulty, datapacks, plugin request, event, rules, economics. Votes have scope (network / instance), immutable proposal revision at ballot start, electorate snapshot, unique eligible voter identity, timestamps, quorum, threshold, deterministic counting, and immutable outcome. Identity linking and anti-alt/anti-sybil policy are essential; thresholds/quorums/eligibility are **owner-configurable and unset until policy is chosen**. Owner defines which actions are automatically executable, manual-review, or prohibited. Passed-but-unsupported proposal becomes a tracked feature request, not an improvised privileged AI action.
+
+**Discord administrator veto:** Any member holding Discord's actual guild Administrator permission at the time of the action may use a protected `/vote cancel` command or authenticated dashboard control to cancel a vote. Role names alone do not confer this authority. Core must verify the administrator's current guild identity and permission via trusted Discord state, not message text or AI claims. Cancellable votes transition atomically to `CANCELLED_BY_ADMIN`, with optional reason, administrator ID, time, proposal/ballot ID, and an announcement. Closing or tally workers must recheck cancellation inside the same transactional authorization boundary before scheduling execution. Cancelled ballots never authorize actions; cast ballots remain in history. Cancellation is not reversal of an action that has already executed; execution/rollback is a separate owner-controlled workflow. If the vote passed but the resulting action remains queued, the administrator may cancel the *pending vote-authorized operation* before execution begins. If execution has begun, stop only at a declared safe checkpoint and escalate instead of claiming an impossible instant rollback. A vote is never silently erased.
 
 ### 4.5 Tickets
 Open/triage/needs-info/escalated/resolved/appealed/reopened. Discord private support flows and web dashboard views. Logs/evidence are access-controlled and retention-governed. AI may summarize, correlate data and propose remedies; auto-execution only for allowlisted low-risk actions. Sensitive punishment/ban appeals and disputed facts route to human review. Ticketing persists and manual workflow operates with OpenCode off.
@@ -75,7 +78,7 @@ Never let a bot or agent address Docker/socket, system shell or raw instance int
 - `minecraft_instances`, `instance_templates`, `instance_allocations`, `instance_ports`, `instance_configs`, `instance_modules`
 - `worlds`, `snapshots`, `backup_verifications`, `restore_jobs`
 - `discord_guilds`, `discord_resources`, `instance_discord_mappings`, `chat_bridge_routes`
-- `proposals`, `proposal_revisions`, `ballots`, `electorate_snapshots`, `votes`, `vote_results`, `governance_policies`
+- `proposals`, `proposal_revisions`, `ballots`, `electorate_snapshots`, `votes`, `vote_results`, `vote_cancellations`, `governance_policies`
 - `tickets`, `ticket_messages`, `ticket_evidence`, `ticket_events`
 - `operations`, `operation_approvals`, `action_policies`, `jobs`, `outbox_events`, `audit_events`
 - `capabilities`, `ai_sessions`, `feature_requests`, `release_candidates`
@@ -87,7 +90,7 @@ All records carry stable IDs, provenance, timestamps and appropriate state/versi
 Operational transitions: `RUNNING -> STOPPING -> STOPPED -> ARCHIVED`; failures enter `FAILED` with explicit repair/retry. `ARCHIVED` is reversible, not deletion. Define legal transitions in code and test them.
 
 ### Governance states
-`DRAFT -> DISCUSSION -> ELIGIBILITY_REVIEW -> BALLOT_OPEN -> PASSED | REJECTED | INVALID -> SCHEDULED -> EXECUTING -> COMPLETED | FAILED | BLOCKED`. Approval binds a specific proposal revision, scope, parameters and expiration. A passed ballot alone never bypasses current capacity or policy.
+`DRAFT -> DISCUSSION -> ELIGIBILITY_REVIEW -> BALLOT_OPEN -> PASSED | REJECTED | INVALID | CANCELLED_BY_ADMIN -> SCHEDULED -> EXECUTING -> COMPLETED | FAILED | BLOCKED`. `CANCELLED_BY_ADMIN` is terminal for the ballot; queued vote-authorized execution can be separately revoked before it begins. Approval binds a specific proposal revision, scope, parameters and expiration. A passed ballot alone never bypasses current capacity or policy.
 
 ### Provisioning saga
 Reserve capacity/port -> prepare storage -> create isolated instance -> validate startup/health -> create/reconcile Discord resources -> publish. Each step persisted with idempotency keys. On error release reservations where safe and retain potentially valuable instance/world data. Retries must not create duplicate channels or instances.
@@ -124,7 +127,7 @@ Quiesce instance -> create immutable world snapshot -> verify snapshot readabili
 
 ### P4 — Governance
 **Deliver:** identity link, anti-alt policy, proposal/discussion/ballot/tally flow, scope and action gating, post-vote job creation.
-**Acceptance:** duplicate and ineligible votes rejected; exact ballot snapshot and quorum rules preserved; passing stop-server vote archives safely; blocked proposals cannot execute.
+**Acceptance:** duplicate and ineligible votes rejected; exact ballot snapshot and quorum rules preserved; passing stop-server vote archives safely; blocked proposals cannot execute. A verified Discord Administrator can cancel an open vote instantly, with public notice and durable audit; a non-admin or AI cannot; closing/cancellation races cannot accidentally authorize execution; a queued action can be revoked before start.
 
 ### P5 — Tickets and moderation
 **Deliver:** ticket channels/web views, role-scoped visibility, audit, reopen/appeal, manual resolution.
