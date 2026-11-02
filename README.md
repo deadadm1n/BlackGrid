@@ -1,106 +1,167 @@
 # BlackGrid
 
-**A community-governed Minecraft server operated by AI, with Discord as its control center.**
+**One unified, AI-optional platform for running a community-governed Minecraft network.**
 
-> Status: planning / foundation. No deployed Minecraft server, Discord bot, or AI administrator exists yet.
+**Website:** [blackgrid.online](https://blackgrid.online) · **Project status:** PRD and architecture planning · **Repository:** `deadadm1n/BlackGrid`
 
-## Vision
+> **Not yet implemented.** The capabilities below describe the intended product, not working functionality. The existing website is planned to be replaced; no production migration or deployment is part of this README.
 
-BlackGrid aims to automate routine Minecraft server operations, support and event management while giving community members transparent control over changes through Discord proposals and votes.
+## What is BlackGrid?
 
-The AI is an **operator**, not an unrestricted owner. Governance rules, permissions, and auditable policies constrain every write action.
+BlackGrid combines a public Minecraft network website, secure owner dashboard, multi-server hosting wrapper, native Discord integration, player governance, support tickets, monitoring, and AI-assisted operations into **one application**.
 
-## Primary capabilities
+Players may propose and vote on virtually any Minecraft-related change—including adding a server, selecting its type, installing mods, resetting a world, or shutting down a server—subject to administrator authority, safety policy and available resources. Discord administrators can cancel active ballots. **Stopping or retiring a server must never delete its world.**
 
-- **Discord-first governance:** submit proposals, discuss them, validate voter eligibility, vote once per eligible person, enforce quorum/thresholds, publish results, and retain an audit trail.
-- **AI-managed tickets:** open private tickets, classify and summarize evidence, suggest/perform permitted remedies, escalate sensitive disputes, allow appeals, and track resolution.
-- **Minecraft bridge:** a Paper plugin sends server events and exposes a strictly allowlisted command/configuration interface to BlackGrid Core.
-- **Operations:** health, TPS, player counts, crashes, log alerts, backups, safe restarts, and configuration change verification.
-- **Community events:** AI-generated event suggestions and scheduling, with policy-gated execution.
-- **Model flexibility:** local-first inference with a pluggable provider interface.
+[OpenCode](https://opencode.ai/) powers optional AI administration, investigation and feature development. **BlackGrid Core, Minecraft instances, Discord operations, tickets, voting, backups and approved deterministic workflows must keep working when OpenCode is offline.**
 
-## Architecture
+## Planned capabilities
+
+| Area | BlackGrid will provide |
+| --- | --- |
+| **Owner dashboard** | Secure login, direct AI chat, per-server console, real-time logs, player/permission management, files, plugins/mods, backups, configuration, audit history and network administration |
+| **Multi-server wrapper** | Create, isolate, start, stop, archive and restore multiple servers; configurable maximum *concurrently active* servers, provisioning limits and CPU/RAM/storage budgets |
+| **Minecraft runtimes** | Adapter-based support, beginning with Paper; staged compatibility for Fabric and NeoForge rather than assuming their mod/plugin ecosystems are interchangeable |
+| **Discord controller** | Guild/channel/role management, server-specific channels, Minecraft chat bridges, notifications, tickets and scoped votes; new servers get their Discord resources automatically |
+| **Community governance** | Proposals, eligibility, network-wide and server-specific ballots, durable tallying, approval policies, execution history and Discord administrator veto |
+| **Support tickets** | Private player support, evidence and diagnostics, status/appeals, optional AI triage and human escalation |
+| **CurseForge API** | Search mods/modpacks/plugin listings, resolve Minecraft version and mod-loader compatibility, dependencies, file provenance and update discovery via deployment-provided API access |
+| **Extension lifecycle** | Manage CurseForge-sourced compatible artifacts and BlackGrid-built plugins; version pinning, auto-update policies, staged tests, safe deployments, rollback and archives |
+| **OpenCode integration** | Direct dashboard conversations, diagnostics, proposed actions and development of new features in an isolated workspace; no unrestricted production authority |
+| **BlackGrid Sentinel** | Temporary, player-inaccessible Minecraft test instances that check startup, logs, world health and performance before changes reach production |
+| **Performance** | Native process/protocol health metrics plus **spark** profiling where supported (avoid duplicate installation where bundled) |
+
+## Governance rules
+
+- Every ballot must be open for **at least 24 hours and no longer than 72 hours (three days)**.
+- **Every vote must be announced on Discord** before its voting clock begins. Closing and cancellation notices are also published. A notification failure blocks opening rather than silently hiding a vote.
+- A verified **Discord guild Administrator** can cancel an active vote. Cancellation is recorded and published, and an associated queued action can be revoked before execution begins. Completed changes require a separate recovery/reversal workflow.
+- A ballot may cover any Minecraft-related proposal, but passing it never bypasses a prohibited action, capacity cap, compatibility check or safety gate.
+- Voting eligibility, quorum and approval thresholds are owner-configurable and are **not yet finalized**.
+- Players can vote to stop or archive a server, **never to delete its world**.
+- All votes, approvals, cancellations, results and attempted changes are auditable.
+
+## Changes: test first, preserve worlds
+
+For a server-changing operation, BlackGrid's planned safety pipeline is:
 
 ```text
-Discord <--> Bot (Python/discord.py) <---> BlackGrid Core (Python/FastAPI)
-                                                   |
-                       +---------------------------+------------------------+
-                       |                           |                        |
-                 Governance                  Ticket manager           AI planner
-                       |                           |                        |
-                       +---------------------------+------------------------+
-                                                   |
-                                               PostgreSQL
-                                                   |
-                                        Policy + Action Gateway
-                                                   |
-                                      Paper plugin (Java) <--> Minecraft
-                                                   |
-                                     Backups, monitoring, logs
+Proposed / approved change
+      ↓
+Consistent world snapshot + per-file SHA-256 manifest
+      ↓
+Verified recovery backup
+      ↓
+Sentinel: isolated copy + proposed changes
+      ↓
+Boot / world validation / logs / spark metrics when available
+      ↓
+PASS? ── No → Block change and publish reason
+  │
+ Yes
+  ↓
+Apply to production with its own verified pre-change backup
+      ↓
+Startup, health, world-file manifest and structure checks
+      ↓
+PASS? ── No → Maintenance + safe rollback + Discord failure notice
+  │
+ Yes
+  ↓
+Publish success and retain audit / recovery records
 ```
 
-**Critical boundary:** The AI emits *structured action requests*. A deterministic policy engine validates identity, authorization, action parameters, approval/vote requirements, cooldowns, and impact before an executor touches the server. Raw shell, arbitrary console command, and unrestricted filesystem access are not AI tools.
+**Hashes do not prove world health by themselves.** Minecraft can legitimately change files during startup; BlackGrid must validate region/NBT structures, logs, and expected-change scope rather than fail simply because before/after hashes differ. A vote that passes remains historically passed even when its *implementation* fails and is rolled back.
 
-## Governance defaults (initial proposal; configurable)
+Sentinel's micro-server is a **temporary isolated test instance**, not a replacement for BlackGrid Core. Large modpacks may need substantial RAM even for a smoke test; resource shortage results in an explicit inconclusive/unavailable result, **never an automatic pass**. Testing without players cannot guarantee live-load performance.
 
-1. Eligible voters must link their Discord account to a Minecraft UUID. Eligibility and anti-sybil rules are enforced before voting.
-2. Proposals have statuses: draft → discussion → ballot → passed/rejected → scheduled → executed/failed/rolled_back.
-3. Only one active vote per eligible voter per proposal; changing a vote replaces the old one before ballot close.
-4. Public votes use a recorded opening, closing, tally, quorum, and threshold. Set precise values via a governance configuration before public launch.
-5. Low-risk approved changes can be executed automatically after validation and backup. High-impact changes (world reset, economy wipe, role/permission changes, sensitive sanctions) need an additional owner approval or are explicitly prohibited.
-6. The AI never counts its own vote, silently changes voting rules, or executes failed proposals.
-7. Results and each attempted action are logged with actor, rationale, authorization, outcome, and rollback information.
+## Automatic updates and custom plugins
 
-## Ticket workflow
+Every server maintains a versioned manifest covering Minecraft, Java, mod loader, plugins, mods, modpacks, source IDs, dependencies, hashes and a last-known-good configuration. Updates may be **off**, **notify-only** (initial safe default), or **auto-stage-and-deploy**, configured per instance/package. Compatible updates go through Sentinel, backups, authorized rollout and post-start validation.
 
-Open → triage → gather context → AI recommendation → automatic safe action **or** human escalation → resolution → appeal/reopen. Ticket contents and evidence are access controlled. AI recommendations are distinguishable from verified facts. Bans and sensitive accusations require suitable review.
+Owner/community feature requests can produce **BlackGrid-built plugins** through OpenCode. Code is developed and tested in an isolated workspace and requires an authorized release process before production. Generated code cannot change BlackGrid's core permissions or self-deploy by bypassing the approval gateway. CurseForge access is configured at deployment; BlackGrid will respect actual API access and file distribution restrictions.
 
-Example Discord commands to implement: `/ticket open`, `/ticket status`, `/propose`, `/vote`, `/proposal status`, `/server status`, `/link`.
+## System architecture
 
-## Security and reliability
+```text
+                    blackgrid.online
+             Public portal + Secure dashboard
+                           |
+                     BlackGrid Core
+        Auth · Resource Registry · Policy · API · Jobs
+               /           |           \
+         Governance      Tickets      Discord Controller
+               \           |           /
+                 Action / Policy Gateway
+                           |
+                    Host Supervisor
+                           |
+          +----------------+----------------+
+          |                |                |
+       Paper           Fabric          NeoForge
+      instances       instances        instances
+          |                |                |
+       Worlds / plugins / mods / backups / logs
+                           |
+                Sentinel test instances
 
-- Discord and Minecraft are untrusted input surfaces. Messages, books, signs, chat, and uploaded evidence cannot override system policies.
-- Never expose Discord tokens, model keys, RCON passwords, or database credentials in source or AI prompts. Prefer the authenticated Paper plugin to unrestricted RCON.
-- Role-based permissions, service authentication, rate limits, idempotent jobs, and transaction-safe ballot counting.
-- Data retention limits and privacy rules for player logs and tickets.
-- Backups must be tested for restore. Config changes include dry-run validation, canary when possible, restart coordination, and rollback.
-- AI inference can fail: Minecraft stays playable, Discord votes remain durable, and no action runs without authorization.
+        OpenCode (optional) ---> authenticated Core API
+        CurseForge API ------> Core catalog adapter
+        spark ---------------> monitoring / profiling
+```
 
-## Suggested repository layout
+One unified product does **not** require every function to live in one process. The core uses modular boundaries, while the supervisor, Discord worker, Minecraft instances and optional AI runtime remain independently recoverable.
+
+### Security principles
+
+BlackGrid treats Minecraft chat, signs/books, Discord messages, logs, tickets, external package metadata and AI output as untrusted input. An independent policy engine authorizes actions before they reach the supervisor; **OpenCode is never given unrestricted host shell, Docker socket, console, Discord secrets or database administrator access**. Prompt-injection defenses reduce risk but cannot make model manipulation impossible. Critical world data is preserved via verified backups and restorable archives, with an independent owner recovery path.
+
+## Proposed repository structure
 
 ```text
 apps/
-  discord-bot/
-  core-api/
-plugins/
-  blackgrid-paper/
+  web/                 # Public website + dashboard
+  core/                # Unified control API and domain modules
+services/
+  supervisor/          # Restricted instance lifecycle and recovery
+  discord/             # Discord integration worker
+  ai-adapter/          # Optional OpenCode session/tool bridge
+  sentinel/            # Isolated validation orchestration
+adapters/
+  minecraft/           # Paper, Fabric, NeoForge adapters
 packages/
-  contracts/
+  contracts/           # Shared API / event schemas
 infra/
-  docker/
+  docker/              # Deployment and isolation configs
 docs/
-  architecture/
-  governance/
-  security/
+  PRD.md               # Authoritative product requirements
+  OPEN_CODE_HANDOFF.md # Agent planning / implementation protocol
 tests/
 ```
 
-## Development roadmap
+*This layout is proposed, not scaffolded.*
 
-**Phase 1 — Foundation:** repo scaffolding, Compose stack, database migrations, Discord bot, Paper plugin handshake, health endpoints, secrets/config.
+## Roadmap
 
-**Phase 2 — Tickets:** private threads/channels, ticket states, AI triage, review and appeal flow, audit logs.
+| Phase | Deliverable |
+| --- | --- |
+| **P0** | Architecture, threat model, contracts, technical decisions and planning review |
+| **P1** | Authentication, unified app shell, database, policy, durable jobs and audit |
+| **P2** | Secure supervisor, instance lifecycle, owner console, backup and resource controls |
+| **P3** | Multi-instance support and Discord channel/chat integration |
+| **P4** | Discord voting, proposals, notification requirements and administrator cancellation |
+| **P5** | Ticket system and moderation workflow |
+| **P6** | Optional OpenCode dashboard integration |
+| **P7** | Capability registry and controlled AI feature development |
+| **P8** | Recovery drills, security testing, monitoring and production deployment |
 
-**Phase 3 — Governance:** Minecraft–Discord account linking, proposals, eligibility, votes, tallies, policy-authorized execution and reversals.
+Sentinel validation, spark, CurseForge integration and managed updates are cross-cutting capabilities with detailed requirements in the PRD; their precise delivery-phase allocation is still to be finalized.
 
-**Phase 4 — AI operations:** structured tool interface, monitor-only mode, automated low-risk remediation, backups and failure recovery.
+## Development guidance
 
-**Phase 5 — Events and economy:** event director, NPC/community interactions, governed economy and game-rule changes.
+**Read first:** [Product Requirements Document](docs/PRD.md) and [OpenCode Handoff](docs/OPEN_CODE_HANDOFF.md).
 
-## Definition of first playable milestone
+The PRD is the authoritative specification. OpenCode should first identify design gaps, propose contracts and test plans, and implement one approved phase at a time. **Do not wipe or redeploy blackgrid.online, touch existing server worlds or assert that planned features already work.**
 
-A player can join Minecraft, link their Discord ID, open a private support ticket, propose a harmless server-setting change, vote, view a transparent result, and see a *policy-approved* change applied with an audit log. This milestone does not require granting AI blanket administrator privileges.
+## License
 
-## Licensing
-
-To be decided before accepting external contributions.
+Not selected yet. Confirm licensing before accepting external contributions.
