@@ -25,6 +25,7 @@ Players may propose and vote on virtually any Minecraft-related change—includi
 | **Community governance** | Proposals, eligibility, network-wide and server-specific ballots, durable tallying, approval policies, execution history and Discord administrator veto |
 | **Support tickets** | Private player support, evidence and diagnostics, status/appeals, optional AI triage and human escalation |
 | **CurseForge API** | Search mods/modpacks/plugin listings, resolve Minecraft version and mod-loader compatibility, dependencies, file provenance and update discovery via deployment-provided API access |
+| **Community custom projects** | Players can request new plugins, mods, datapacks and gameplay features. BlackGrid searches compatible existing solutions first; if none fits, OpenCode can build a tracked project in isolation, with community approval, Sentinel testing and reviewed deployment |
 | **Extension lifecycle** | Manage CurseForge-sourced compatible artifacts and BlackGrid-built plugins; version pinning, auto-update policies, staged tests, safe deployments, rollback and archives |
 | **OpenCode integration** | Direct dashboard conversations, diagnostics, proposed actions and development of new features in an isolated workspace; no unrestricted production authority |
 | **BlackGrid Sentinel** | Temporary, player-inaccessible Minecraft test instances that check startup, logs, world health and performance before changes reach production |
@@ -79,6 +80,30 @@ Sentinel's micro-server is a **temporary isolated test instance**, not a replace
 Every server maintains a versioned manifest covering Minecraft, Java, mod loader, plugins, mods, modpacks, source IDs, dependencies, hashes and a last-known-good configuration. Updates may be **off**, **notify-only** (initial safe default), or **auto-stage-and-deploy**, configured per instance/package. Compatible updates go through Sentinel, backups, authorized rollout and post-start validation.
 
 Owner/community feature requests can produce **BlackGrid-built plugins** through OpenCode. Code is developed and tested in an isolated workspace and requires an authorized release process before production. Generated code cannot change BlackGrid's core permissions or self-deploy by bypassing the approval gateway. CurseForge access is configured at deployment; BlackGrid will respect actual API access and file distribution restrictions.
+
+### Player-requested custom development
+
+If a player requests a feature BlackGrid cannot find in its compatible CurseForge/installed catalog, BlackGrid will create a **tracked custom project** instead of dropping the request. The intended flow is:
+
+```text
+Player feature request → Search compatible existing solutions
+                               ↓
+                         No suitable match
+                               ↓
+                  Define scope + requirements
+                               ↓
+                 Announced community vote
+                               ↓
+                OpenCode builds in sandbox
+                               ↓
+             Automated tests + Sentinel trial
+                               ↓
+               Authorized production release
+                               ↓
+               Versioned updates + rollback
+```
+
+Development and deployment are distinct approvals: **passing a vote may authorize creating the project, not bypassing the security review for newly generated code**. Progress, failures, and reasons are visible to the community. When OpenCode is offline, projects queue without affecting server uptime or governance.
 
 ## System architecture
 
