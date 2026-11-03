@@ -24,7 +24,7 @@ Planned intelligence features include:
 - **Long-term plugin maintenance:** proactively track bugs, Minecraft version changes and updates to BlackGrid-built plugins.
 - **Predictive monitoring:** spot worsening TPS, memory, save times and error patterns using native metrics and spark before failures become severe.
 
-**Not planned:** separate player governments for each Minecraft server. Server-specific votes remain under one Discord-led governance system.
+**Per-server voting:** Each Minecraft server gets its own local proposals, ballots, Discord announcements and eligible electorate; shared-resource and cross-server decisions use network-wide votes. Both share one governance engine, 24–72-hour voting windows, and Discord administrator veto. **Separate voting systems do not create separate governments or admin hierarchies.**
 
 ## Planned capabilities
 
