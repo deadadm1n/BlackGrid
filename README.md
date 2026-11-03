@@ -53,6 +53,12 @@ Planned intelligence features include:
 - Players can vote to stop or archive a server, **never to delete its world**.
 - All votes, approvals, cancellations, results and attempted changes are auditable.
 
+### AI-created and combined community proposals
+
+The co-administrator can notice when players are collectively describing a larger feature or game mode, group related requests, and **submit its own combined proposal directly to the appropriate vote**. For instance, separate requests for chicken memory, defensive flocks, territories and adaptive behavior might become one proposed *Poultry Rebellion* plugin. Original authors and requests stay credited and traceable, and compatible parts may be voted on separately.
+
+A proposal affecting one server uses that server's electorate; new server creation or cross-server changes go to the network vote. Every AI proposal receives the same mandatory Discord announcements, **24–72-hour** ballot, administrator veto, resource review and Sentinel/release protections as human proposals. Passing the vote does not bypass production safeguards.
+
 ## Changes: test first, preserve worlds
 
 For a server-changing operation, BlackGrid's planned safety pipeline is:
