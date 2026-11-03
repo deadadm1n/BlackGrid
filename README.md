@@ -14,6 +14,18 @@ Players may propose and vote on virtually any Minecraft-related change—includi
 
 [OpenCode](https://opencode.ai/) powers optional AI administration, investigation and feature development. **BlackGrid Core, Minecraft instances, Discord operations, tickets, voting, backups and approved deterministic workflows must keep working when OpenCode is offline.**
 
+## AI co-administrator and continuous improvement
+
+BlackGrid's OpenCode-powered AI is an **active co-administrator**, not a command-only assistant. It can form evidence-based opinions, disagree respectfully, initiate investigations, propose improvements, maintain a persistent task backlog and follow up on incidents. It operates with delegated permissions—not unrestricted host access—and BlackGrid keeps running while OpenCode is offline.
+
+Planned intelligence features include:
+- **Shared knowledge across servers:** reuse verified diagnoses, compatibility findings and fixes without blindly applying them.
+- **Community-created game modes:** players propose entirely new mechanics; BlackGrid searches first, then can develop and validate custom content.
+- **Long-term plugin maintenance:** proactively track bugs, Minecraft version changes and updates to BlackGrid-built plugins.
+- **Predictive monitoring:** spot worsening TPS, memory, save times and error patterns using native metrics and spark before failures become severe.
+
+**Not planned:** separate player governments for each Minecraft server. Server-specific votes remain under one Discord-led governance system.
+
 ## Planned capabilities
 
 | Area | BlackGrid will provide |
