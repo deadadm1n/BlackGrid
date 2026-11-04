@@ -39,3 +39,7 @@ AI: autonomous Q&A, routine evidence gathering, bounded diagnostics and permitte
 
 ## Required tests
 Verify cross-server denial, role revocation during queued action, conflicting inherited grants, secure role-editor access, Discord Administrator edge cases, AI permission downgrade, Deadhead community-only boundary, no self-elevation, moderator appeal separation, service-offline functioning, and immutability of audit/protected backups.
+
+## P0 consolidation reference
+
+[DECISIONS.md](DECISIONS.md) is the consolidated approved-policy register; [PERMISSION_REGISTRY.md](PERMISSION_REGISTRY.md) provides proposed granular permission keys (not approved role grants); [STATE_MACHINES.md](STATE_MACHINES.md) defines voting, incident, Bridge and release lifecycles; [P0_REVIEW_CHECKLIST.md](P0_REVIEW_CHECKLIST.md) is the review exit gate. No new implementation authority is granted by these links.
