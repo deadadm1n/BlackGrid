@@ -56,3 +56,10 @@ The service boundary contracts and cross-system failure/race tests are specified
 
 ## Refactor note
 The previous 75 KB monolithic PRD was preserved verbatim in [PRD_LEGACY_REFERENCE](PRD_LEGACY_REFERENCE.md). Section-specific documents were extracted without intentionally dropping the original requirements. The shorter PRD is now the entry point. Future changes should update the *relevant subject file* and this register rather than append another divergent requirement block to the entry-point PRD.
+
+## 300-member scenario follow-up — needs approval before encoding final policy
+
+- **Confirmed product direction:** distinct community/backend roles and scoped grants; explicit appeal handling; evidence-grounded grief investigation; targeted restoration when feasible; role-specific dashboard; transparent AI action records; useful staff handoff; per-server rule context; careful moderation rather than personality policing.
+- **Examples not final values:** eight example server types, sample RAM assignments, illustrative moderation levels, proposed 50%/60%/two-thirds vote thresholds, and S0–S3 incident definitions. Do not implement these numbers as canonical defaults without owner approval.
+- **Policy still unresolved:** moderation auto-action tiers, appeal reviewers when few staff are available, active ballot outage behavior, server resource queue priority, quorum, account eligibility, exact emergency notification routes, retention and voluntary-staff availability policy.
+- **No new authority granted:** AI cannot bypass Core, invent evidence, ban dissenters for disagreeing, access protected host recovery or escalate its own permissions.
