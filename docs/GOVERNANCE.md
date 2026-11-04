@@ -62,3 +62,19 @@ BlackGrid's AI co-administrator may independently identify complementary player 
 ## Tickets and member support
 ### 4.5 Tickets
 Open/triage/needs-info/escalated/resolved/appealed/reopened. Discord private support flows and web dashboard views. Logs/evidence are access-controlled and retention-governed. AI may summarize, correlate data and propose remedies; auto-execution only for allowlisted low-risk actions. Sensitive punishment/ban appeals and disputed facts route to human review. Ticketing persists and manual workflow operates with OpenCode off.
+
+## Community safety and staff accountability — proposed endgame requirements
+
+**Scope-specific rules:** The same gameplay (raiding, PvP, block destruction) can be allowed on one instance and prohibited on another. Moderation evaluates current server constitution, claims and permissions, event context, and evidence. Being abrasive or disagreeing with AI is not itself a rule violation. No punishment solely from an unsupported AI inference.
+
+**Incident lifecycle:** report/detection → evidence preservation → triage → authorized containment → human review where required → proportional action → targeted recovery if available → notification → appeal → closed/audited. An event recorder/compatible plugin must actually exist before claiming historic block-level evidence. If evidence is absent, label it absent. Restore affected areas from reliable history when practical instead of rolling back unrelated player progress.
+
+**Staff separation:** Community helpers/moderators/admins handle people and scoped governance. Backend operators handle technical systems. A technical role does not imply moderation rights; a community role does not imply host credentials. Deadhead is the designated final community escalation authority; owner retains infrastructure emergency authority. Discord's native Administrator ballot-cancel power remains independent of custom role names.
+
+**Accountability:** Every consequential moderation action records actor, target, scope, rule, evidence references, duration, result and appeal status. Staff must not erase records of their own actions or decide their own appeals; route appeals to a different authorized reviewer where possible. Flag anomalous staff activity for review without assuming misconduct. Define independent oversight for staff-vs-staff conflict and credential revocation/offboarding, preserving historical audit.
+
+**Proportionate responses:** Distinguish permitted provocation from rule breaches, active griefing, harassment, abuse, spam and bot raids. Recommended progressive tools include reminders, warnings, temporary restrictions, scoped suspension and network ban; serious cases may skip steps under configured policy. Repeated or severe punishments need transparent reason and an appeal route. Player privacy and minimum evidence collection are required.
+
+**Governance at scale:** Maintain network-wide vs instance-specific electorate boundaries; do not allow players of unrelated servers to dominate a local matter solely through network membership. Treat turnout/quorum, proposal passing thresholds, account-age criteria and voter-roll eligibility as unset owner/community decisions, not fabricated constants. Different vote intent classes (advisory, concept/development, implementation) have distinct consequences. Both Discord and web use one ballot record. Proposal discussion never triggers timer reset; formal authorized edits do.
+
+**Community support workload:** Unified ticket queue with severity, ownership, handoff, SLA targets as configured, staff availability, private evidence, anti-abuse/rate controls and escalation when no staff member is available. No obligation for volunteer staff to remain on-call.
