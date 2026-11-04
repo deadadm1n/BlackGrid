@@ -34,3 +34,7 @@ If none is suitable, BlackGrid creates a development project containing a specif
 Development approval is distinct from permission to deploy new executable code. All new artifacts require provenance, security checks, auditable release authorization, backup and rollback. Projects remain queued when OpenCode is unavailable. The community can view progress and failure reasons. Versioned custom projects support later updates or disabling without data destruction.
 
 Acceptance: a request searches for existing compatible solutions first; no-match requests become resumable projects; sandbox builds cannot change live servers; failed tests block release; all new-code deployments respect the action gateway; AI downtime does not erase requests.
+
+## Approved spark profiling integration (2026-11-04)
+
+Provide **spark profiler** support as a first-class optional diagnostic capability. Detect installed spark support by Minecraft version and loader (Paper/Fabric/NeoForge as available); manage compatible acquisition/install only through approved plugin/mod distribution controls. Profile CPU/ticks/threads/memory as supported, with a bounded duration and resource cost; staff and AI must be authorized via granular permission toggles. Show profiler status and results/link or archived artifacts in the operations dashboard without leaking private information. Unknown/unsupported loaders or unapproved binaries fail with explicit capability errors. spark is never a hard startup dependency.
