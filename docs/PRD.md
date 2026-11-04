@@ -46,6 +46,39 @@ The owner can securely log in (passkeys/WebAuthn preferred; robust recovery), in
 Provide an **explicitly separated** emergency host terminal for owner only, with stronger re-auth and session recording/audit; it cannot be reached by AI or player-facing endpoints.
 The owner can directly chat with OpenCode from the dashboard, see plans/tool calls/approvals, and terminate AI sessions.
 
+### 4.1a Live settings and AI autonomy control center (approved design)
+
+**Core UX requirement:** Every ordinary BlackGrid runtime setting must have a discoverable, permission-controlled control in the owner/admin dashboard. Avoid config-file edits, code changes, redeployments or routine service restarts merely to adjust policy. This covers network defaults, per-instance overrides, governance, Discord, moderation, project workflows, tickets, notifications, AI behavior and budgets, plugin/update policy, monitoring, backups, and community experience. When a setting inherently needs restart/reprovisioning, label it prominently, offer a reviewed staged apply/restart workflow, and never misleadingly claim it was applied live.
+
+**Autonomy matrix:** Display AI capabilities, current effective policy and scope (network, Discord guild, server, channel/project), with separately adjustable modes such as OFF / SUGGEST ONLY / APPROVAL REQUIRED / AUTONOMOUS for explicitly allowed operations. Examples: public replies, proposal drafting, spam cleanup, member moderation, channel organization, incident investigation, sandbox prototyping, server operations and release requests. Protect nondelegable invariants: AI cannot self-grant permissions, remove its own safeguards, access owner-only recovery, delete protected backups, or deploy unreviewed executable code. Discord bot Administrator permission does not change these Core limits.
+
+**Live change semantics:** Changes are validated and saved centrally with version/revision, actor, time, reason, scope, before/after diff, and audit entry. Workers and bot receive revisioned updates via subscription/event plus periodic reconciliation; new authorization decisions use the latest committed policy; queued actions are revalidated before execution and newly disallowed actions are cancelled or paused. Show applied/pending/failed state, effective inherited value vs override, and drift/errors. Dangerous settings changes use reauthentication, preview/confirmation and optional staged rollout; support revert to a prior known-good configuration with a complete audit trail. Concurrent edits use optimistic locking to prevent silent lost updates.
+
+**Settings organization:** Dashboard navigation: Overview; Fleet & Servers; Discord & Community; Governance & Proposals; Roles & Permissions; AI & Autonomy; Tasks & Projects; Plugins & Updates; Security & Moderation; Observability & Alerts; Backups & Recovery; Integrations & Secrets; Notifications; Audit & Configuration History. Offer search, contextual descriptions, safe defaults, import/export of non-secret configuration, and sensitive-role restrictions. Never disclose stored tokens/secrets to AI or unauthorized viewers; secret rotation is controlled separately.
+
+**Access model:** Owner can see full settings subject to stronger authorization for sensitive operations. Delegated admins can modify only authorized settings in their assigned scope. Community managers can manage approved community settings without gaining infrastructure rights. AI can read only sanitized settings and request changes but cannot directly alter its own autonomy, permissions, policy root or protected settings. Settings affect all entry points consistently (web, Discord, background jobs, AI, Minecraft adapters).
+
+**Acceptance:** Changing an allowed AI action from AUTONOMOUS to SUGGEST ONLY in the dashboard immediately blocks the next autonomous action across the bot and workers without a restart; an in-flight/queued action rechecks policy before applying; per-server override behaves correctly; a concurrent conflicting edit is rejected; audit and rollback work; a restart-required setting is shown as pending until actually applied; unauthorized users and the AI cannot escalate their own authority.
+
+### 4.1b Additional approved product capabilities (details and thresholds for later design)
+
+- **Onboarding and unified identity:** guided rule acceptance, Discord identity, optional/required Minecraft UUID linking per governance eligibility, current role/permission visibility, membership recovery and scope-aware access without unnecessary personal data.
+- **Permission-management UX:** global/scoped role and permission matrix with previews, protected roles, effective-grants debugger, change audit, and owner-controlled delegation.
+- **AI operational memory:** durable investigations, evidence provenance, decisions and confirmed outcomes with confidence, expiration/correction, access controls and data-retention policy; not a claim of subjective consciousness.
+- **AI budgets:** dashboard controls for tokens/cost, concurrent tasks, inference cadence, server CPU/RAM load and project budgets; clear suspend/stop controls and alarms.
+- **Governance safeguards:** voter eligibility, anti-alt review, proposal revision limits, spam controls, configurable thresholds/quorums, and moderation appeals with owner-chosen policy values rather than invented defaults.
+- **Notification subscriptions:** member-selectable events, per-server/project follows, digest and urgent-only options, mention/rate limits and reliable delivery status.
+- **Disaster recovery:** backup schedules and retention, configuration snapshots, restore drills, external/offline recovery and clear recovery procedures with verifiable evidence.
+- **AI community presence:** an identifiable AI co-admin with configurable voice/interaction style and community context, without preferential enforcement or special voting power for favored users.
+- **Investigations:** evidence-based cross-system diagnosis using logs, world state, plugin inventory, incidents, player reports and historical fixes, with privacy protections and citations to observed evidence.
+- **Dependency mapping:** versioned mod/plugin/config dependencies and impact previews for removal, upgrades and compatibility changes.
+- **Simulation lab:** isolated Sentinel-connected experiments for gameplay mechanics, behavior prototypes and load tests, separate from production and subject to resource limits and explicit deployment gates.
+- **Community analytics:** aggregate retention/engagement/activity metrics, scoped dashboards, performance correlation, clear privacy/retention settings and no default intrusive surveillance.
+- **Community events:** proposals, scheduling, reminders, reservations/capacity, event life cycle, AI-generated ideas and approved execution.
+- **Self-improvement proposals:** AI may identify inefficiencies, design solutions, test changes in isolation and submit human-reviewable proposals for BlackGrid itself; no self-modification of policy enforcement or unapproved core deployment.
+
+**Open design decisions:** Exact thresholds, defaults, identity requirements, quotas, review authority, incident retention and autonomy allowlists require a dedicated owner-approved design pass. This section records accepted feature direction, not permission for arbitrary autonomous execution or production changes.
+
 ### 4.2 Minecraft fleet wrapper
 Support multiple Minecraft instance types via adapters (Paper, Fabric, NeoForge staged, not assumed interoperable). Each instance is a separately identified resource with type, version, mod/plugin manifest, resource caps, network address, data volumes, world archives and lifecycle state. Reconciliation discovers drift. Configurable limits include max_active_servers, max_provisioned_servers, per-instance RAM/CPU, fleet resource budget, disk reserve and optional player caps.
 A server request can be approved yet **queued** until active-server capacity becomes available. All network ports are allocated uniquely. Instances are never silently removed on failure.
@@ -263,7 +296,7 @@ Quiesce instance -> create immutable world snapshot -> verify snapshot readabili
 **Acceptance:** no ambiguous security boundary; OpenCode can identify precisely which modules may touch host, Discord and game APIs; reviewable incremental work items.
 
 ### P1 — Core foundation
-**Deliver:** unified app scaffold, protected dashboard/login, DB+migrations, RBAC, audit, configuration, durable jobs/outbox, minimal read-only health API.
+**Deliver:** unified app scaffold, protected dashboard/login, DB+migrations, RBAC, audit, revisioned live settings registry and initial permission-gated settings UI, durable jobs/outbox, minimal read-only health API.
 **Acceptance:** unauthorized requests blocked at API; startup without OpenCode; audit and job state survive restarts; automated tests pass.
 
 ### P2 — Supervisor and server lifecycle
@@ -283,7 +316,7 @@ Quiesce instance -> create immutable world snapshot -> verify snapshot readabili
 **Acceptance:** no cross-user leakage, operation without AI, evidence provenance and access tests.
 
 ### P6 — OpenCode integration
-**Deliver:** dashboard chat, isolated OpenCode sessions, typed read tools, action proposal approvals, redaction, health degradation UX.
+**Deliver:** dashboard chat, isolated OpenCode sessions, typed read tools, action proposal approvals, redaction, health degradation UX, live AI autonomy/budget matrix with immediate policy enforcement and audit.
 **Acceptance:** pull OpenCode down during operations; everything in P1-P5 still works. Injection tests cannot trigger unapproved operations. No direct shell/host access by OpenCode.
 
 ### P7 — Feature-development automation
