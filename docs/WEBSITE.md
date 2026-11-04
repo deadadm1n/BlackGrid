@@ -91,3 +91,11 @@ Server backup settings expose daily local Minecraft world/map backups and seven-
 ## Rank tabs and Minecraft client modpack pages
 
 Follow [ORGANIZATION_AND_PERMISSIONS.md](ORGANIZATION_AND_PERMISSIONS.md) for owner, Deadhead, AI, two network moderators, scoped admins and backend role templates; show one configurable tab per rank and per-action rights. Follow [BLACKGRID_BRIDGE.md](BLACKGRID_BRIDGE.md) for **per-server downloadable version-matched client modpacks**, whether required or optional, installation/update notes, validated hashes, release history and link to that server's Discord modpack notes channel. The BlackGrid Bridge does not require any player client mod.
+
+## Approved Discord-only access and frictionless player entry (2026-11-04)
+
+**Public Minecraft entry never requires website registration, Discord membership or account linking.** Players discover the server by server list, advertisement, website or Discord and join through Minecraft as usual. A welcome message inside Minecraft contains a clickable Discord invite and optional vote/command links. The public website can advertise servers and provide modpack downloads without forcing a login where those files are intended to be public.
+
+**Website community login is Discord OAuth2 only**. No separate BlackGrid password, signup flow or alternate social login. A person with a valid Discord account can authenticate to the website and view the public/eligible features of their BlackGrid profile, even if they have not joined the BlackGrid Discord guild or linked Minecraft. **Discord account ownership is not the same as BlackGrid guild membership**: privileged actions, community-specific visibility, votes, and staff dashboard permissions still require their own policy checks. After a single verified Minecraft↔Discord link, the website automatically presents the correct Minecraft UUID/name, eligible communities, role permissions and voting state. Username matching alone must never establish ownership.
+
+The login button is the only *community authentication method*, not a prerequisite to browsing public pages or downloading publicly distributable server modpacks. Owner recovery is a separate protected non-community access channel, as already designed.
