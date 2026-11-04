@@ -45,3 +45,7 @@ Do not silently redefine requirements. Record questions and unresolved parameter
 - If an acceptance test fails, do not call the phase complete.
 - For unknown settings: choose safe disabled defaults or document the decision instead of inventing production policy.
 - Keep PRD and ADRs in sync when an approved design decision changes.
+
+## Newly canonical design documents
+
+Read [ORGANIZATION_AND_PERMISSIONS.md](ORGANIZATION_AND_PERMISSIONS.md) and [BLACKGRID_BRIDGE.md](BLACKGRID_BRIDGE.md) before designing scopes, Minecraft adapters, Discord chat routes, player commands or client modpack distribution. The endgame rank topology and server-side-only Bridge requirements must be incorporated into P0 contracts, but **no code or deployment is authorized** by these notes. Existing EssentialsX/DiscordSRV/LuckPerms/spark compatibility is to be evaluated; do not assume verified interoperability or silently reimplement mature third-party commands.
