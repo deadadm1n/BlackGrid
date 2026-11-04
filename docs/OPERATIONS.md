@@ -55,3 +55,9 @@ The eight-server example is a scenario, not a mandated fleet composition or RAM 
 **Staff offboarding:** Revocation of role/session/service grants and rotation of exposed credentials, reassignment of tickets/projects, preservation of work and audit history; returning staff never automatically inherits old permissions.
 
 **Health and operations center:** Dashboard aggregates core, Discord, AI, fleet, backups, Sentinel, tickets, votes, queued actions, incidents, and pending approvals. Explicitly show real monitoring values vs illustrative estimates, with drill-down and safe cancellation at defined checkpoints.
+
+## Owner decisions: capacity denial and Discord incident channel (2026-11-04)
+
+When admission would exceed measured or reserved capacity, return a structured **DENIED_INSUFFICIENT_CAPACITY** result with the specific blockers and suggested options. Surface an AI-generated recommendation for an **appropriately scoped shutdown/archive vote** targeting an underperforming existing server supported by comparative utilization, active-player trends and world importance—not an automated shutdown. Only a separate successful, executable, safety-checked authorization may retire an instance; archive world/backups rather than delete.
+
+Deliver operational incidents to the dedicated owner-configured Discord channel, with message ID, acknowledged state and incident link. Owner enables Discord notifications; the platform should show failed Discord delivery distinctly from a notification actually sent. Severity detection and preauthorized safe response depend on rank/action policies. Discord unavailable: queue durable notifications and flag the need for a separate fallback alert mechanism, still unresolved.
