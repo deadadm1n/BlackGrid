@@ -208,3 +208,7 @@ The PRD is the authoritative specification. OpenCode should first identify desig
 ## License
 
 Not selected yet. Confirm licensing before accepting external contributions.
+
+## Refactored planning documentation (November 2026)
+
+Start with [Master PRD](docs/PRD.md) and [Decision Register](docs/DECISIONS.md). Detailed specs: [Website](docs/WEBSITE.md), [Discord](docs/DISCORD.md), [Governance](docs/GOVERNANCE.md), [Minecraft](docs/MINECRAFT.md), [AI](docs/AI_SYSTEM.md), [Architecture](docs/ARCHITECTURE.md), [Operations](docs/OPERATIONS.md), [Security](docs/SECURITY.md), and [Roadmap](docs/ROADMAP.md). The [original PRD](docs/PRD_LEGACY_REFERENCE.md) is preserved for audit, not a competing source of truth. [THE HUNT](docs/experiments/THE_HUNT_PROPOSAL.md) remains research notes for an owner-submitted future vote, not a build task.
