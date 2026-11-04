@@ -41,3 +41,17 @@ Every *server-changing operation* initiated by the owner, governance, or AI uses
 
 ### World reset
 Quiesce instance -> create immutable world snapshot -> verify snapshot readability/restore test as policy dictates -> generate new world -> verify -> restart. Rollback restores previous world while preserving a snapshot of the replacement; no data wipe.
+
+## 300-member / eight-instance operational model (illustrative capacity scenario)
+
+The eight-server example is a scenario, not a mandated fleet composition or RAM allocation. Capacity decisions depend on concurrency, plugins/mods, JVM overhead, disk I/O, CPU and available host resources—not registered-member counts alone.
+
+**Admission and scheduling:** Track reserved and observed CPU/RAM/disk/ports and minimum host headroom; each server has versioned resource profile, priority class, schedule and status. Approved but unplaceable requests enter a visible queue with reason and options. Do not autonomously stop unrelated live communities to make space. Scheduled/event instances may start/stop through an owner-approved policy while preserving worlds. Exact queue ordering and priority weights remain open and dashboard-configurable.
+
+**Incident manager:** Cross-service incident IDs, affected services, evidence timeline, severity, acknowledgement owner, escalation targets, approved containment playbooks, recovery checkpoints and postmortem. For S2/major issues, publish an evidence-backed incident message to a configurable dedicated Discord channel. S3/critical incidents require preauthorized protective actions and notification to appropriately authorized infrastructure personnel as well as community staff if player experience is affected. Discord unavailability must have an owner-configurable independent alert route; AI unavailability cannot prevent deterministic recovery. S0–S3 labels and triggers are proposed, not final policy.
+
+**Stability:** Repeated restart failures use bounded retries and circuit breakers; disk-full stops risky writes and alerts; backup/restore evidence is independently verifiable. Stop serving potentially unsafe changes rather than fabricate healthy state. Recover job ownership after worker crash, reconcile partial Discord API operations, and retain immutable event histories.
+
+**Staff offboarding:** Revocation of role/session/service grants and rotation of exposed credentials, reassignment of tickets/projects, preservation of work and audit history; returning staff never automatically inherits old permissions.
+
+**Health and operations center:** Dashboard aggregates core, Discord, AI, fleet, backups, Sentinel, tickets, votes, queued actions, incidents, and pending approvals. Explicitly show real monitoring values vs illustrative estimates, with drill-down and safe cancellation at defined checkpoints.
