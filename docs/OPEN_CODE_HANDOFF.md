@@ -1,3 +1,5 @@
+> **Documentation update:** See [PRD](PRD.md), [Decision Register](DECISIONS.md), and subject specs [Website](WEBSITE.md), [Discord](DISCORD.md), [Governance](GOVERNANCE.md), [Minecraft](MINECRAFT.md), [AI](AI_SYSTEM.md), [Architecture](ARCHITECTURE.md), [Operations](OPERATIONS.md), [Security](SECURITY.md), [Roadmap](ROADMAP.md). The archived pre-refactor PRD is not canonical. No implementation is authorized by documentation alone.
+
 # BlackGrid — OpenCode Agent Handoff
 **Status:** Instructions for staged implementation; begin only after owner approves phase P0/P1.
 
