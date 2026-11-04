@@ -57,3 +57,11 @@ Bridge operations carry schema version, authenticated instance ID, idempotency/c
 - LuckPerms: https://luckperms.net/ — group permission integration.
 - spark: https://spark.lucko.me/ — diagnostics and profiler support.
 Review actual supported versions, licenses and integration mechanics during P0/P3; this list is not a claim of verified runtime compatibility.
+
+## Approved frictionless Minecraft entry and one-time account linking (2026-11-04)
+
+**Join first, play immediately:** Players discover the network via ads, Minecraft server listings, website or Discord, enter its server address in Minecraft, and play without a BlackGrid website account, a Discord login, a mandatory Minecraft-to-Discord link, or a BlackGrid client-side mod. A server welcome message provides a **clickable Discord invite**, useful command hints and optional current voting/community links. These are discoverability conveniences, not an onboarding gate. Modded instances requiring actual gameplay client mods remain subject to their published per-server modpack requirements, independent of Bridge.
+
+The Bridge can see an authenticated Minecraft UUID from the game's connection, but **cannot infer which Discord account owns that UUID from a username alone**. If a player wishes to use voting, staff or other linked-identity features, provide a **one-time verified** in-game code/account-link confirmation. The resulting Discord↔Minecraft association is stored in Core and reused across the network. No repeated linking for each server. Account changes, unlinking and disputes require secure recovery checks.
+
+**In-game welcome example:** Welcome to BlackGrid! Play normally. [Join our Discord] [View current votes] [Commands]. Links are clickable and configurable; no unsolicited registration flow.
