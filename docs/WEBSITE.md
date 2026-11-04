@@ -61,3 +61,15 @@ The owner can directly chat with OpenCode from the dashboard, see plans/tool cal
 - **Self-improvement proposals:** AI may identify inefficiencies, design solutions, test changes in isolation and submit human-reviewable proposals for BlackGrid itself; no self-modification of policy enforcement or unapproved core deployment.
 
 **Open design decisions:** Exact thresholds, defaults, identity requirements, quotas, review authority, incident retention and autonomy allowlists require a dedicated owner-approved design pass. This section records accepted feature direction, not permission for arbitrary autonomous execution or production changes.
+
+## Role-specific endgame operating experience (proposed)
+
+**Player:** responsive Discord-only sign-in, rules acceptance, optional verified Minecraft linking as required, server browser, proposal/discussion/voting, relevant notifications, report/appeal workflows and game access without compulsory political participation.
+
+**Community staff:** scoped case inbox with report priority, evidence, authorized moderation actions, appeal separation, member assistance, governance constraints and staff availability. Clearly show current instance rules and what counts as a violation.
+
+**Backend staff:** operational fleet view, telemetry, logs, dependency inventory, safe instance console, backups, rollout queue, staged modifications, resource scheduler, Sentinel results and incident handling—only within granted scopes.
+
+**Owner:** an actionable overview showing network health, community queues, current AI operation/budgets, pending approvals, failures, settings and audit. Effective-permission inspector: who may do what, on which guild/server/project, through which role and policy revision. Explicit policy editing and emergency pause for AI; backend-only controls independent of community Discord OAuth.
+
+**Every consequential action must explain:** initiator/trigger, rationale/evidence, granting authority, actual change and whether/how it is reversible. Avoid exposing private evidence on public pages. Player notifications are scoped and opt-in where appropriate, not indiscriminate broadcast.
