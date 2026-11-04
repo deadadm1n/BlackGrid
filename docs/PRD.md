@@ -74,3 +74,7 @@ The documents above preserve the previous requirements but are not yet an execut
 ## Endgame organization and Minecraft integration
 
 The planned 300-member/eight-server staffing scenario, rank tabs and scoped authority are defined in [ORGANIZATION_AND_PERMISSIONS.md](ORGANIZATION_AND_PERMISSIONS.md). The server-side Minecraft↔Discord bridge, optional/required client modpack website downloads, commands and per-server Discord modpack notes are defined in [BLACKGRID_BRIDGE.md](BLACKGRID_BRIDGE.md). Neither document authorizes implementation.
+
+## Player onboarding — approved simplicity
+
+A player finds BlackGrid via advertisement, server list, website or Discord, joins the Minecraft address and starts playing. There is no mandatory BlackGrid account, Discord membership/link, or BlackGrid client-side installation gate. The Bridge sends a friendly welcome with a clickable Discord invite and optional vote/commands links. A server's *actual gameplay modpack* may separately require client mods. Community website login uses Discord OAuth2 only; a valid Discord account can log in regardless of guild membership, but access to privileged community actions depends on membership, accepted rules, linked Minecraft identity as needed and Core authorization. One verified Minecraft UUID↔Discord account link is remembered for future sessions. See [WEBSITE](WEBSITE.md) and [BLACKGRID_BRIDGE](BLACKGRID_BRIDGE.md).
