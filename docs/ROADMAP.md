@@ -71,3 +71,7 @@ Open parameters are enumerated in [DECISIONS.md](DECISIONS.md). Operators config
 - **P8:** cross-platform/offline/failed-sync tests, modpack deployment/rollback drills, client download accessibility and license provenance.
 
 **No phase authorizes construction of THE HUNT, Discord guild mutation or website cutover without owner approval.**
+
+## P0 consolidation reference
+
+[DECISIONS.md](DECISIONS.md) is the consolidated approved-policy register; [PERMISSION_REGISTRY.md](PERMISSION_REGISTRY.md) provides proposed granular permission keys (not approved role grants); [STATE_MACHINES.md](STATE_MACHINES.md) defines voting, incident, Bridge and release lifecycles; [P0_REVIEW_CHECKLIST.md](P0_REVIEW_CHECKLIST.md) is the review exit gate. No new implementation authority is granted by these links.
