@@ -49,3 +49,7 @@ Do not silently redefine requirements. Record questions and unresolved parameter
 ## Newly canonical design documents
 
 Read [ORGANIZATION_AND_PERMISSIONS.md](ORGANIZATION_AND_PERMISSIONS.md) and [BLACKGRID_BRIDGE.md](BLACKGRID_BRIDGE.md) before designing scopes, Minecraft adapters, Discord chat routes, player commands or client modpack distribution. The endgame rank topology and server-side-only Bridge requirements must be incorporated into P0 contracts, but **no code or deployment is authorized** by these notes. Existing EssentialsX/DiscordSRV/LuckPerms/spark compatibility is to be evaluated; do not assume verified interoperability or silently reimplement mature third-party commands.
+
+## P0 consolidation reference
+
+[DECISIONS.md](DECISIONS.md) is the consolidated approved-policy register; [PERMISSION_REGISTRY.md](PERMISSION_REGISTRY.md) provides proposed granular permission keys (not approved role grants); [STATE_MACHINES.md](STATE_MACHINES.md) defines voting, incident, Bridge and release lifecycles; [P0_REVIEW_CHECKLIST.md](P0_REVIEW_CHECKLIST.md) is the review exit gate. No new implementation authority is granted by these links.
