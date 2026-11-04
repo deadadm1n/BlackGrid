@@ -73,3 +73,11 @@ The owner can directly chat with OpenCode from the dashboard, see plans/tool cal
 **Owner:** an actionable overview showing network health, community queues, current AI operation/budgets, pending approvals, failures, settings and audit. Effective-permission inspector: who may do what, on which guild/server/project, through which role and policy revision. Explicit policy editing and emergency pause for AI; backend-only controls independent of community Discord OAuth.
 
 **Every consequential action must explain:** initiator/trigger, rationale/evidence, granting authority, actual change and whether/how it is reversible. Avoid exposing private evidence on public pages. Player notifications are scoped and opt-in where appropriate, not indiscriminate broadcast.
+
+## Owner-approved rank-tab permission editor (2026-11-04)
+
+The live dashboard has **one clearly labeled tab per rank** (including community ranks, backend ranks, and AI). Within each tab show **all applicable individual permissions** organized by category (governance, moderation, Discord administration, tickets, Minecraft instance operations, backups, diagnostics/spark, AI tasks, development, deployment, settings, security, audit). Each permission has a toggle or explicit allow/deny/inherit state as appropriate, the permitted scope and a concise description of what it allows. Avoid hiding dangerous permissions in generic "admin" switches.
+
+Display the *effective* permissions resulting from assignment, inheritance, instance/guild scope and any hard nondelegable restrictions. Changing a toggle writes a versioned audited policy revision to Core; Core rechecks permission before each consequential action and cancels or suspends revoked queued authority. Protect the role/permission editor itself from self-escalation, lockout and cross-scope leaks. Permission tabs also apply to AI moderation and AI autonomous development. All rank settings remain live-adjustable when technically possible; restart-required changes show pending status.
+
+Voting defaults (51%, 60%, 2/3, 10% active-player quorum, optional 24h discussion, three revisions) are configurable from the governance settings view. Show each ballot's snapped rules and pause/resume state when Discord is offline.
