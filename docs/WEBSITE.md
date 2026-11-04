@@ -81,3 +81,9 @@ The live dashboard has **one clearly labeled tab per rank** (including community
 Display the *effective* permissions resulting from assignment, inheritance, instance/guild scope and any hard nondelegable restrictions. Changing a toggle writes a versioned audited policy revision to Core; Core rechecks permission before each consequential action and cancels or suspends revoked queued authority. Protect the role/permission editor itself from self-escalation, lockout and cross-scope leaks. Permission tabs also apply to AI moderation and AI autonomous development. All rank settings remain live-adjustable when technically possible; restart-required changes show pending status.
 
 Voting defaults (51%, 60%, 2/3, 10% active-player quorum, optional 24h discussion, three revisions) are configurable from the governance settings view. Show each ballot's snapped rules and pause/resume state when Discord is offline.
+
+## Approved ballot privacy and world-backup controls (2026-11-04)
+
+Governance settings expose **live turnout visible / live YES-NO hidden until close** as the approved default, with appropriate role authorization, snapshots and audit. Public ballot components show participation and remaining voting time, never an early choice breakdown.
+
+Server backup settings expose daily local Minecraft world/map backups and seven-day routine retention (with backups' latest verified state, disk usage, restore points, failed runs and protected snapshot exemptions). Editing backup settings requires scoped permission and a change record.
