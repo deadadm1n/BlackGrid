@@ -70,3 +70,7 @@ The Discord bot may have guild Administrator capability for AI-driven operations
 The documents above preserve the previous requirements but are not yet an executable implementation specification. Before OpenCode implementation, reconcile the roadmap against all newly accepted features, define versioned API/events/schemas, threat model and deployment topology, resolve or explicitly parameterize open choices, and add cross-spec integration tests. Keep one canonical subject home for each requirement; update [DECISIONS.md](DECISIONS.md) when decisions change. Never silently reinterpret open questions as approval.
 
 **No deployment, Discord modification, chicken server creation or autonomous development is authorized by this documentation change.**
+
+## Endgame organization and Minecraft integration
+
+The planned 300-member/eight-server staffing scenario, rank tabs and scoped authority are defined in [ORGANIZATION_AND_PERMISSIONS.md](ORGANIZATION_AND_PERMISSIONS.md). The server-side Minecraft↔Discord bridge, optional/required client modpack website downloads, commands and per-server Discord modpack notes are defined in [BLACKGRID_BRIDGE.md](BLACKGRID_BRIDGE.md). Neither document authorizes implementation.
