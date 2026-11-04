@@ -49,6 +49,7 @@ BG-016 BlackGrid Sentinel: any proposed instance software/configuration change m
 - [GOVERNANCE.md](GOVERNANCE.md): Rules acceptance, proposal editing and ballot resets, scoped permissions, AI-originated proposals, discussions, voting and tickets.
 - [MINECRAFT.md](MINECRAFT.md): Instance fleet, CurseForge/mod/plugin lifecycle, custom development, capacity controls.
 - [AI_SYSTEM.md](AI_SYSTEM.md): Optional co-administrator, durable work cycles, memory, evidence and bounded autonomous initiatives.
+- [CONTRACTS.md](CONTRACTS.md): Versioned inter-service requests, events, failure behavior, authority boundaries and contract tests.
 - [ARCHITECTURE.md](ARCHITECTURE.md): Service boundaries, resource and data model, deterministic control plane.
 - [OPERATIONS.md](OPERATIONS.md): Instance lifecycle, Sentinel, world integrity, recovery and operational workflows.
 - [SECURITY.md](SECURITY.md): Authentication, authorization, sandboxing, privacy, backups and protected boundaries.
