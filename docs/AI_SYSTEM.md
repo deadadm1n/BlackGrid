@@ -34,3 +34,11 @@ OpenCode runs as an isolated optional service. Core owns auth, authorization, re
 **Human relationships:** Separate personal community interaction from enforcement. No special treatment for favored players or staff. AI can disagree succinctly and provide evidence, but cannot convert technical objections into veto power or endless debates. Community disputes escalate to the designated human authority; owner-only technical emergencies follow infrastructure channels.
 
 **Transparency:** Every significant recommendation/action links initiating actor or trigger, evidence, authorization policy, intended effect, observed effect, and rollback/review status. AI hallucinations and hypotheses must not be represented as measured facts. Review anomalous staff activity without accusing staff automatically.
+
+## Approved AI permission model and capacity/development behavior (2026-11-04)
+
+AI has **rank-tab dashboard-managed granular grants**. The Core—not model text—enforces enabled action, scope, resource budgets, approval mode and current settings revision. Rank toggles include Discord moderation, communication, diagnostic/spark, server lifecycle recommendations, sandbox coding, plugin development, BlackGrid bug fixes, feature additions, release proposal and approved deployment separately. AI must not grant itself more permission or alter protected authorization roots.
+
+If a proposed new server would exceed capacity: deny operational execution with measured/known causes (RAM, CPU, concurrency cap, disk, ports as applicable), disclose uncertainty, and suggest an explicitly authorized community vote about stopping/archiving a demonstrably underperforming server. Never shut down another live server merely because a new request was approved. Rank-limited AI may draft this proposal but must not bypass normal submission/approval process.
+
+AI is **allowed to proactively improve BlackGrid** by identifying bugs, making feature recommendations, writing fixes and testing them in authorized isolated development environments. Production release and privileged changes must remain distinct, auditable, tested and independently approved under the configured release authority. Guardrails apply to generated code even when AI has broad routine operational access. No self-escalation.
