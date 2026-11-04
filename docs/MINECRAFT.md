@@ -38,3 +38,7 @@ Acceptance: a request searches for existing compatible solutions first; no-match
 ## Approved spark profiling integration (2026-11-04)
 
 Provide **spark profiler** support as a first-class optional diagnostic capability. Detect installed spark support by Minecraft version and loader (Paper/Fabric/NeoForge as available); manage compatible acquisition/install only through approved plugin/mod distribution controls. Profile CPU/ticks/threads/memory as supported, with a bounded duration and resource cost; staff and AI must be authorized via granular permission toggles. Show profiler status and results/link or archived artifacts in the operations dashboard without leaking private information. Unknown/unsupported loaders or unapproved binaries fail with explicit capability errors. spark is never a hard startup dependency.
+
+## BlackGrid Bridge and client modpack distribution
+
+[BLACKGRID_BRIDGE.md](BLACKGRID_BRIDGE.md) is the canonical design for the server-side plugin/mod bridge. **No BlackGrid client mod is required.** Per-server optional/required client modpacks are published through the website with compatibility, instructions and hashes; changes are announced and recorded in that server's configured Discord update channel. Plugin commands/modules must coexist cleanly with EssentialsX, LuckPerms and third-party chat relays where feasible. spark support remains required as an optional diagnostic integration, not a startup dependency.
