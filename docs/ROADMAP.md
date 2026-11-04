@@ -57,3 +57,17 @@
 
 ## No silent policy selection
 Open parameters are enumerated in [DECISIONS.md](DECISIONS.md). Operators configure valid values via dashboard when supported; undefined values never cause surprise automatic deployment. A temporarily disabled feature is preferable to a guessed sensitive authorization policy.
+
+## Cross-phase integration — organization, Bridge and modpacks
+
+- **P0:** include [organization/rank model](ORGANIZATION_AND_PERMISSIONS.md) and [Bridge protocols](BLACKGRID_BRIDGE.md) in security ADRs, permissions schemas, command collisions/interop studies, mod license review and contract tests.
+- **P1:** rank-tab editor, scopes/inheritance, owner/Deadhead/AI/moderator/server-admin/backend role templates; Core-linked Discord/Minecraft identity foundation.
+- **P2:** Minecraft Bridge's Paper server-side handshake, health, secure event adapter, and basic command capability detection; server runs when Core/AI unavailable.
+- **P3:** scoped bidirectional per-instance Discord chat, staff relay, linked identities, duplicate prevention, announced modpack release channels. Fabric/NeoForge bridge compatibility per adapter readiness.
+- **P4:** in-game linked governance commands using same Core ballot, outage pause behavior, quorum and vote privacy as website/Discord.
+- **P5:** in-game report/appeal/authorized staff commands and case routing to two network moderators, admins and Deadhead; optional Essentials-like player utilities avoiding collisions.
+- **P6:** role-limited `/bg ask`, AI operational investigations and spark diagnostics; AI permissions live in rank dashboard.
+- **P7:** validated per-server client modpack publication on website, compatible Minecraft/loader builds and idempotent Discord changelogs; controlled updates through isolated testing and owner-defined release gates.
+- **P8:** cross-platform/offline/failed-sync tests, modpack deployment/rollback drills, client download accessibility and license provenance.
+
+**No phase authorizes construction of THE HUNT, Discord guild mutation or website cutover without owner approval.**
