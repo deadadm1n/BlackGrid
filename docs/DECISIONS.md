@@ -15,6 +15,27 @@
 - Approved additional capabilities (identity, memory, incident investigation, dependencies, gameplay sandbox, analytics, events, recovery, self-improvement proposals) require detailed implementation specification: [WEBSITE](WEBSITE.md), [AI_SYSTEM](AI_SYSTEM.md).
 - **THE HUNT** is a manually submitted *future* Discord governance test, **not** authorization to implement the chicken AI or server: [Proposal](experiments/THE_HUNT_PROPOSAL.md).
 
+## Decisions and safe proposed defaults — owner review required
+
+| ID | Policy question | Proposed starting point (NOT approved) | What the dashboard should expose |
+|---|---|---|---|
+| D-01 | Vote passing threshold | Configurable simple majority of valid votes, subject to quorum | threshold by vote type/scope |
+| D-02 | Minimum participation | Require an explicit configured quorum before binding votes can open | min voters or eligible-electorate percentage |
+| D-03 | Identity and new-member eligibility | Linked Discord principal plus rules acknowledgement; optional Minecraft-link requirement according to electorate | membership age, account link, voter-eligibility rules |
+| D-04 | Proposal discussion period | Optional per scope, with no automatic start until an authorized announcement | minimum discussion duration, bypass authority |
+| D-05 | Repeated proposal edits | Configurable limit/cooldown; every actual edit restarts timer and voids prior round | edit quota, interval and escalation |
+| D-06 | Concurrent capacity requests | FIFO by approval time unless an explicit owner-set priority class exists | resource admission policy, class weights, quotas |
+| D-07 | AI autonomy | Low-risk answers/investigations suggest-only initially; no privileged writes without authorization until owner configures it | capability × scope × autonomy mode |
+| D-08 | Incident response | Report serious incidents to designated Discord channel; preauthorized stabilizing actions only; escalate if communication fails | severity, channel, notification target, safe playbook |
+| D-09 | Discord outage during active ballot | **Unresolved policy conflict**: published ballot duration cannot be exceeded beyond 72h and announcement is required; consider 'continue clock with website available' vs 'cancel and reissue new round on recovery'. Do **not** silently extend | outage policy and operator review |
+| D-10 | Vote visibility/privacy | Aggregate totals may be displayed by configuration; individual votes private by default | tally visibility, anonymity, audit scope |
+| D-11 | Moderation and appeals | Routine predefined spam cleanup may auto-execute; contested severe punishments require human review | moderation action risk tiers, appeals |
+| D-12 | Data retention and backup windows | Explicit owner-set retention, immutable audit and protected world archives | policies by data class |
+| D-13 | Minecraft platform versions and proxy | Paper-first, Fabric/NeoForge via adapters; Velocity deferred until need confirmed | supported adapters, version matrix, routing |
+| D-14 | Deployment and self-improvement authority | AI can create proposals and sandbox plans; production core changes require independent approval | release approval policies and audit |
+
+**Do not implement these candidate defaults as owner decisions.** Configure as explicit setup-required values or safe unavailable states where a product action depends on an unresolved value. Provide a clear owner review flow.
+
 ## Open decisions (do not choose silently)
 - Quorum, passing threshold, anti-alt criteria, eligibility, proposal discussion/cooldowns and edit limits.
 - Autonomy allowlists, default budgets, moderation escalation and notification levels.
@@ -28,6 +49,10 @@
 - No assumption that passing a concept vote authorizes development or deployment.
 - No AI self-grant of rights, unreviewed production code, world/archive deletion, or access to owner break-glass.
 - No inference that biological research/datasets provide a working chicken consciousness or ready-to-run trained Minecraft agent.
+
+## Service interface reference
+
+The service boundary contracts and cross-system failure/race tests are specified in [CONTRACTS.md](CONTRACTS.md); the updated sequencing is in [ROADMAP.md](ROADMAP.md). These are architecture proposals subject to owner review, not implementation authority.
 
 ## Refactor note
 The previous 75 KB monolithic PRD was preserved verbatim in [PRD_LEGACY_REFERENCE](PRD_LEGACY_REFERENCE.md). Section-specific documents were extracted without intentionally dropping the original requirements. The shorter PRD is now the entry point. Future changes should update the *relevant subject file* and this register rather than append another divergent requirement block to the entry-point PRD.
