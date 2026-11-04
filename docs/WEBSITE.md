@@ -87,3 +87,7 @@ Voting defaults (51%, 60%, 2/3, 10% active-player quorum, optional 24h discussio
 Governance settings expose **live turnout visible / live YES-NO hidden until close** as the approved default, with appropriate role authorization, snapshots and audit. Public ballot components show participation and remaining voting time, never an early choice breakdown.
 
 Server backup settings expose daily local Minecraft world/map backups and seven-day routine retention (with backups' latest verified state, disk usage, restore points, failed runs and protected snapshot exemptions). Editing backup settings requires scoped permission and a change record.
+
+## Rank tabs and Minecraft client modpack pages
+
+Follow [ORGANIZATION_AND_PERMISSIONS.md](ORGANIZATION_AND_PERMISSIONS.md) for owner, Deadhead, AI, two network moderators, scoped admins and backend role templates; show one configurable tab per rank and per-action rights. Follow [BLACKGRID_BRIDGE.md](BLACKGRID_BRIDGE.md) for **per-server downloadable version-matched client modpacks**, whether required or optional, installation/update notes, validated hashes, release history and link to that server's Discord modpack notes channel. The BlackGrid Bridge does not require any player client mod.
