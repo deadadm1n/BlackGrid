@@ -78,3 +78,7 @@ The planned 300-member/eight-server staffing scenario, rank tabs and scoped auth
 ## Player onboarding — approved simplicity
 
 A player finds BlackGrid via advertisement, server list, website or Discord, joins the Minecraft address and starts playing. There is no mandatory BlackGrid account, Discord membership/link, or BlackGrid client-side installation gate. The Bridge sends a friendly welcome with a clickable Discord invite and optional vote/commands links. A server's *actual gameplay modpack* may separately require client mods. Community website login uses Discord OAuth2 only; a valid Discord account can log in regardless of guild membership, but access to privileged community actions depends on membership, accepted rules, linked Minecraft identity as needed and Core authorization. One verified Minecraft UUID↔Discord account link is remembered for future sessions. See [WEBSITE](WEBSITE.md) and [BLACKGRID_BRIDGE](BLACKGRID_BRIDGE.md).
+
+## P0 consolidation reference
+
+[DECISIONS.md](DECISIONS.md) is the consolidated approved-policy register; [PERMISSION_REGISTRY.md](PERMISSION_REGISTRY.md) provides proposed granular permission keys (not approved role grants); [STATE_MACHINES.md](STATE_MACHINES.md) defines voting, incident, Bridge and release lifecycles; [P0_REVIEW_CHECKLIST.md](P0_REVIEW_CHECKLIST.md) is the review exit gate. No new implementation authority is granted by these links.
