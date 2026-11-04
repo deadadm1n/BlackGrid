@@ -4,6 +4,9 @@
 **Status:** Instructions for staged implementation; begin only after owner approves phase P0/P1.
 
 ## Read in order
+
+**Before any implementation**, read [CONTRACTS.md](CONTRACTS.md), the reconciled [ROADMAP.md](ROADMAP.md) and open decisions in [DECISIONS.md](DECISIONS.md). Their details take precedence over stale phase descriptions in the legacy PRD. This handoff still authorizes planning review only.
+
 1. `docs/PRD.md` — source of truth on product outcomes and non-negotiables.
 2. `docs/OPEN_CODE_HANDOFF.md` — implementation protocol.
 3. `README.md` — high-level overview (PRD wins on conflict).
