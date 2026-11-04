@@ -91,3 +91,9 @@ Final decisions: exact ballot outage treatment, quorum/threshold policies, voter
 **Observability:** spark capability query and bounded profile request/result contracts by instance/loader/version. Dashboard surfaces profiles; execution requires scoped diagnostics permissions.
 
 **Incident delivery:** durable event to configured Discord incident channel with acknowledgment; do not mark notified before Discord confirms message delivery.
+
+## Approved tally-redaction and backup contracts (2026-11-04)
+
+`GET /api/v1/ballots/{id}/status` returns eligible electorate size, valid vote count, quorum progress, deadline/paused state and **no YES/NO split while open or paused**. Cross-surface event payloads and AI tool outputs follow the same redaction rule. Final tally available only after closure, subject to explicit audit permissions for integrity investigation.
+
+`world.backup.schedule`: default daily local; routine restore-point retention seven days. Store `world_id`, `snapshot_id`, `started_at`, `completed_at`, `verification_status`, `storage_location`, `protected_reason` and `prune_eligible_at`. Cleanup must not remove protected pre-change snapshots or archival worlds and must not confuse seven elapsed days with seven successful daily backups. Document chosen precise pruning semantics before implementing destructive retention.
