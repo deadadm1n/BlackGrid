@@ -92,3 +92,7 @@ Insufficient fleet capacity never automatically converts concept approval into s
 ## Approved ballot visibility default (2026-11-04)
 
 While a ballot is open (or paused), the public website/Discord UI may show **turnout and quorum progress**, but **must not reveal YES/NO totals, percentages, option distributions or intermediate direction**. This applies to Core responses, events, administrative UX and AI summaries except narrowly scoped integrity/audit access with explicit authority; do not leak hidden tallies via logs, prompts or analytics. Publish final tally after closure and retain default individual-ballot privacy. Owner-authorized live dashboard settings may adjust future ballot visibility; changes to an active ballot must respect its recorded privacy-policy snapshot.
+
+## In-game governance and rank routing
+
+The Bridge command design in [BLACKGRID_BRIDGE.md](BLACKGRID_BRIDGE.md) lets linked players access current proposals, cast the **same canonical ballot** from Minecraft/Discord/website, file reports and message AI, with the same frozen/paused vote state and visibility rules. Rank responsibilities, server-scoped admins, two network moderators and escalation to Deadhead are in [ORGANIZATION_AND_PERMISSIONS.md](ORGANIZATION_AND_PERMISSIONS.md). Minecraft identity and permissions must be verified before vote or enforcement; don't expose private vote choices or grant broader permissions from in-game OP status.
