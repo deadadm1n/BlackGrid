@@ -79,3 +79,15 @@ API routes are conceptual names; finalize OpenAPI, pagination, errors, request b
 ## 9. Unresolved contracts
 
 Final decisions: exact ballot outage treatment, quorum/threshold policies, voter eligibility and alt-account checks, queued-resource priority, incident escalation levels, default autonomy allowlists, event retention, approval authority for release/cancellation, and role hierarchy delegation. These are owner/community policy choices tracked in [DECISIONS.md](DECISIONS.md).
+
+## Owner-approved decision impact (2026-11-04)
+
+**Permission contract:** Model `rank_id`, `parent_rank_id`, `permission_key`, `scope`, `effect` (allow/deny/inherit), `revision`, `source` and `non_delegable`; `GET effective-permissions/{principal}` resolves grants with policy provenance. Dashboard exposes a tab per rank with granular action toggles. Mutation requires permission-management authority and optimistic concurrency; policy is rechecked at execution.
+
+**Ballot contract:** Ballot snapshots threshold by type (regular 51%, major 60%, retirement 2/3), 10%-of-eligible-active quorum, participant identity and discussion/revision policy. Track `ACTIVE`, `PAUSED_DISCORD_UNAVAILABLE`, `CLOSED`, `SUPERSEDED`, `CANCELLED`; `remaining_active_seconds`, `paused_at`, `resumed_at` and audit events. Pause the clock when Discord outage is detected; preserve votes. The treatment of 72h as active rather than wall-clock hours and input acceptance during pause needs explicit final contract agreement.
+
+**Capacity denial:** `instance.reserve` returns a typed capacity-denied response with blocking resources, current reservation and safe alternative proposal link; no automatic victim/server eviction. Optional AI recommendation proposes an independent governance vote backed by utilization evidence.
+
+**Observability:** spark capability query and bounded profile request/result contracts by instance/loader/version. Dashboard surfaces profiles; execution requires scoped diagnostics permissions.
+
+**Incident delivery:** durable event to configured Discord incident channel with acknowledgment; do not mark notified before Discord confirms message delivery.
